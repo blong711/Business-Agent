@@ -1,0 +1,25 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "AI Business Agent"
+    API_V1_STR: str = "/api/v1"
+    
+    # AI Config
+    ANTHROPIC_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+    
+    DEFAULT_MODEL: str = "claude-3-haiku-20240307" # Claude Haiku linh hoạt
+    
+    # Database
+    MONGODB_URL: str = "mongodb://mongodb:27017" # URL mặc định cho Docker
+    DATABASE_NAME: str = "ai_business_db"
+    
+    # Bots
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    
+    class Config:
+        env_file = ".env"
+
+settings = Settings()

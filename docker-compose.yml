@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 1. Cơ sở dữ liệu chính - MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: ai_business_db
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - agent-network
+
+  # 2. Bộ não hệ thống - Backend FastAPI
+  api:
+    build: ./backend
+    container_name: ai_business_api
+    depends_on:
+      - mongodb
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      # Bạn vui lòng cung cấp API Key ở đây hoặc file .env
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-YOUR_ANTHROPIC_KEY_HERE}
+      - MONGODB_URL=mongodb://mongodb:27017
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    networks:
+      - agent-network
+
+  # 3. Giao diện Web Chat - Frontend React
+  frontend:
+    build: ./frontend
+    container_name: ai_business_frontend
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

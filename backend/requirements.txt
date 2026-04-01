@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+anthropic
+motor
+pydantic
+pydantic-settings
+python-dotenv
+python-telegram-bot
+langchain
+langchain-anthropic
+langchain-core
+pytest
+httpx
