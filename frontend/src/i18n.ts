@@ -136,6 +136,7 @@ export interface TranslationSchema {
   handsFree: string;
   ttsOff: string;
   ttsOn: string;
+  loadingHistory: string;
 }
 
 export const translations: Record<Language, TranslationSchema> = {
@@ -283,6 +284,7 @@ export const translations: Record<Language, TranslationSchema> = {
     handsFree: 'Rảnh tay',
     ttsOff: 'Tắt đọc tự động',
     ttsOn: 'Bật đọc tự động',
+    loadingHistory: 'Đang tải lịch sử hội thoại...',
 
     // Auth
     login: 'Đăng nhập',
@@ -443,6 +445,7 @@ export const translations: Record<Language, TranslationSchema> = {
     getStarted: 'Get Started',
     noAccount: "Don't have an account?",
     hasAccount: 'Already have an account?',
+    loadingHistory: 'Loading conversation history...',
     updateError: 'Update failed!',
     loadHistoryError: 'Failed to load chat history.',
     updateProdError: 'Production update failed!',

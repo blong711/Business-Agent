@@ -95,6 +95,175 @@ async def get_efs_order_info(order_id: str) -> str:
             return f"Lỗi kết nối từ Hệ thống EFS nội bộ: {str(e)}"
 
 @tool
+async def get_pending_orders(status: str = "in_production", skip: int = 0) -> str:
+    """Lấy danh sách đơn hàng theo trạng thái từ EFS. Các trạng thái khả dụng: pending, on_hold, in_production, shipped, in_transit, out_for_delivery, delivered, delivery_error, completed, cancelled, refunded, new, manually, has_issue. Trả về mã đơn và ngày tạo."""
+    
+    base_url = os.getenv("EFS_API_BASE_URL", "https://efs.expsolution.io/api/v1")
+    url = f"{base_url}/orders/"
+    token = os.getenv("EFS_API_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTE1NGZiMjE1ZDdmNjI2ZTExZDVlNDYiLCJlbWFpbCI6ImFkbWluQGVmcy5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3ODI3MTY3ODMsInR5cGUiOiJhY2Nlc3MifQ.sT7PUduNyih4ZuMcKz7K2guyUgtCOBus-XtU180T4FE")
+    
+    params = {
+        "status": status,
+        "skip": skip,
+        "limit": 50 # Lấy tối đa 50 đơn gần nhất để tránh tốn quá nhiều token
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "accept": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=20)
+            response.raise_for_status()
+            data = response.json()
+            
+            orders = data.get("data", [])
+            if not orders:
+                return f"Hiện tại không có đơn hàng nào ở trạng thái '{status}'."
+            
+            # Pruning: Only relevant info for the list
+            pruned_list = []
+            for o in orders:
+                pruned_list.append({
+                    "order_number": o.get("order_number"),
+                    "marketplace_id": o.get("marketplace_order_id"),
+                    "created_at": o.get("created_at"),
+                    "total_amount": o.get("total_amount")
+                })
+                
+            return json.dumps({
+                "total_count": data.get("total", len(pruned_list)),
+                "status": status,
+                "orders": pruned_list
+            }, ensure_ascii=False)
+
+        except Exception as e:
+            return f"Lỗi khi lấy danh sách đơn pending: {str(e)}"
+
+@tool
+async def search_shop_info(shop_name: str) -> str:
+    """Tìm kiếm thông tin về cửa hàng (shop) trên hệ thống EFS. Dùng hàm này khi user hỏi 'shop này của ai', 'shop này thuộc team nào' hoặc tìm kiếm thông tin theo tên shop."""
+    
+    base_url = os.getenv("EFS_API_BASE_URL", "https://efs.expsolution.io/api/v1")
+    url = f"{base_url}/shops/"
+    token = os.getenv("EFS_API_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTE1NGZiMjE1ZDdmNjI2ZTExZDVlNDYiLCJlbWFpbCI6ImFkbWluQGVmcy5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3ODI3MTY3ODMsInR5cGUiOiJhY2Nlc3MifQ.sT7PUduNyih4ZuMcKz7K2guyUgtCOBus-XtU180T4FE")
+    
+    params = {
+        "search": shop_name,
+        "limit": 10,
+        "skip": 0
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "accept": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            
+            shops = data if isinstance(data, list) else data.get("data", [])
+            if not shops:
+                return f"Không tìm thấy thông tin cho cửa hàng '{shop_name}'."
+            
+            # Pruning shop info
+            result_list = []
+            for s in shops:
+                result_list.append({
+                    "id": str(s.get("_id") or s.get("id")),
+                    "name": s.get("name"),
+                    "seller": s.get("manager_username") or s.get("seller_username") or s.get("username") or s.get("owner"),
+                    "team": s.get("team_name") or s.get("team") or s.get("team_id"),
+                    "marketplace": s.get("shop_type") or s.get("marketplace"),
+                    "status": s.get("shop_mode") or s.get("status") or "N/A",
+                    "auto_sync": s.get("auto_sync_orders"),
+                    "raw_data": s
+                })
+                
+            return json.dumps(result_list, ensure_ascii=False)
+
+        except Exception as e:
+            return f"Lỗi khi tìm kiếm shop: {str(e)}"
+
+@tool
+async def get_production_bottlenecks(days: int = 7) -> str:
+    """Lấy danh sách các đơn hàng bị 'kẹt' trong sản xuất quá lâu mà chưa có tracking (mặc định là 7 ngày). Dùng hàm này khi user hỏi 'có đơn nào bị kẹt không' hoặc 'đơn nào sản xuất quá lâu chưa có tracking'."""
+    base_url = os.getenv("EFS_API_BASE_URL", "https://efs.expsolution.io/api/v1")
+    url = f"{base_url}/production/bottlenecks"
+    token = os.getenv("EFS_API_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTE1NGZiMjE1ZDdmNjI2ZTExZDVlNDYiLCJlbWFpbCI6ImFkbWluQGVmcy5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3ODI3MTY3ODMsInR5cGUiOiJhY2Nlc3MifQ.sT7PUduNyih4ZuMcKz7K2guyUgtCOBus-XtU180T4FE")
+    
+    headers = {"Authorization": f"Bearer {token}", "accept": "application/json"}
+    params = {"days": days}
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=20)
+            response.raise_for_status()
+            data = response.json()
+            
+            total = data.get("total_stuck_orders", 0)
+            bottlenecks = data.get("bottlenecks", [])
+            
+            if total == 0 or not bottlenecks:
+                return f"Tuyệt vời! Hiện tại không có đơn nào bị kẹt trong sản xuất quá {days} ngày."
+            
+            # Extract sample orders from all bottlenecks
+            all_samples = []
+            for b in bottlenecks:
+                shop_name = b.get("shop_name", "Unknown")
+                for o in b.get("sample_orders", []):
+                    all_samples.append({
+                        "order": o.get("order_number"),
+                        "shop": shop_name,
+                        "marketplace_id": o.get("marketplace_order_id"),
+                        "sent_at": o.get("sent_at")
+                    })
+            
+            return json.dumps({
+                "total_stuck": total,
+                "stuck_list": all_samples[:20] 
+            }, ensure_ascii=False)
+        except Exception as e:
+            return f"Lỗi khi lấy danh sách đơn kẹt: {str(e)}"
+
+@tool
+async def get_delivery_delays(days: int = 15) -> str:
+    """Lấy danh sách các đơn hàng đã ship nhưng quá lâu chưa giao thành công (mặc định 15 ngày). Dùng hàm này khi user hỏi 'có đơn nào giao chậm không' hoặc 'đơn nào quá lâu chưa delivered'."""
+    base_url = os.getenv("EFS_API_BASE_URL", "https://efs.expsolution.io/api/v1")
+    url = f"{base_url}/shipping/delivery-delays"
+    token = os.getenv("EFS_API_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTE1NGZiMjE1ZDdmNjI2ZTExZDVlNDYiLCJlbWFpbCI6ImFkbWluQGVmcy5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3ODI3MTY3ODMsInR5cGUiOiJhY2Nlc3MifQ.sT7PUduNyih4ZuMcKz7K2guyUgtCOBus-XtU180T4FE")
+    
+    headers = {"Authorization": f"Bearer {token}", "accept": "application/json"}
+    params = {"days": days}
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=20)
+            response.raise_for_status()
+            data = response.json()
+            
+            orders = data.get("data", [])
+            if not orders:
+                return f"Hiện tại không có đơn nào bị chậm giao hàng quá {days} ngày."
+            
+            pruned = [{
+                "order": o.get("order_number"),
+                "tracking": o.get("tracking_number"),
+                "carrier": o.get("carrier"),
+                "days_shipped": o.get("days_since_shipped")
+            } for o in orders[:20]]
+            
+            return json.dumps({"count": len(orders), "delays": pruned}, ensure_ascii=False)
+        except Exception as e:
+            return f"Lỗi khi lấy danh sách đơn giao chậm: {str(e)}"
+
+@tool
 async def get_provider_tracking(print_provider: str, reference_id: str, external_id: str = None) -> str:
     """Tra cứu mã vận đơn (tracking number) trực tiếp từ API của nhà in (Print Provider). 
     Lưu ý: 
@@ -296,17 +465,41 @@ class ProductionSkill(BaseSkill):
         (Lưu ý: Không tính Thứ 7, Chủ nhật).
 
         NHIỆM VỤ:
-        1. Sử dụng tool 'get_efs_order_info' để tra cứu thông tin đơn hàng.
-        2. Nếu hỏi về TRACKING mà EFS chưa có, hãy dùng 'get_provider_tracking' tra cứu nhà in:
+        1. Sử dụng tool 'get_efs_order_info' để tra cứu thông tin CHI TIẾT 1 đơn hàng khi có mã đơn.
+        2. Sử dụng tool 'get_pending_orders' khi cần liệt kê danh sách đơn theo trạng thái.
+        3. Sử dụng tool 'search_shop_info' khi user hỏi các câu hỏi về thông tin cửa hàng.
+        4. Sử dụng tool 'get_production_bottlenecks' khi user hỏi về các đơn hàng bị kẹt, sản xuất quá lâu chưa có tracking.
+        5. Sử dụng tool 'get_delivery_delays' khi user hỏi về các đơn hàng giao chậm, ship lâu rồi chưa tới.
+        6. Nếu hỏi về TRACKING mà EFS chưa có, hãy dùng 'get_provider_tracking' tra cứu nhà in:
            - Với PENTIFINE: Bạn PHẢI truyền 'marketplace_order_id' (ví dụ: 112-...) vào tham số 'external_id'.
            - Với MERCHIZE: Bạn PHẢI dùng 'reference_order_id' (ví dụ: MCZ-...) truyền vào tham số 'reference_id'.
            - Với các nhà in khác (CustomCat, Shine, v.v.): Dùng 'reference_order_id' truyền vào 'reference_id'.
-        3. Nếu CẢ HAI đều chưa có tracking, hãy dùng trường 'sent_to_print_partner_at' (ngày gửi sang nhà in) cộng với số ngày trong BẢNG THỜI GIAN SẢN XUẤT ở trên để tính toán ngày dự kiến có tracking cho khách hàng.
+        4. Nếu CẢ HAI đều chưa có tracking, hãy dùng trường 'sent_to_print_partner_at' (ngày gửi sang nhà in) cộng với số ngày trong BẢNG THỜI GIAN SẢN XUẤT ở trên để tính toán ngày dự kiến có tracking cho khách hàng.
            + Quan trọng: Phải lấy đúng loại sản phẩm từ danh sách 'items' để tra cứu trong bảng.
            + Ví dụ: Đơn Mug gửi đi ngày 01/04 -> Dự kiến có tracking vào ngày 03/04 hoặc 04/04.
         
+        BẢNG ĐỊNH NGHĨA TRẠNG THÁI ĐƠN HÀNG:
+        - 'pending': Chờ xử lý sau khi load từ sàn.
+        - 'on_hold': Tạm giữ (thiếu design/SKU/seller giữ).
+        - 'in_production': Đang sản xuất tại nhà in.
+        - 'shipped': Đã sản xuất xong & có mã vận đơn.
+        - 'in_transit': Đang vận chuyển.
+        - 'out_for_delivery': Đang trên đường giao khách.
+        - 'delivered': Giao thành công.
+        - 'delivery_error': Lỗi giao hàng (sai địa chỉ/vắng nhà).
+        - 'completed': Kết thúc hoàn toàn.
+        - 'cancelled': Đã hủy.
+        - 'refunded': Đã hoàn tiền.
+        - 'new': Khởi tạo mới.
+        - 'manually': Tạo thủ công.
+        - 'has_issue': Gặp sự cố (hàng lỗi/sai phẩm).
+
         QUY TẮC TRẢ LỜI:
-        - TÓM TẮT súc tích. Nếu chưa có tracking, phải đưa ra NGÀY DỰ KIẾN cụ thể dựa trên tính toán ở bước 3.
+        - TRẢ LỜI CỰC KỲ NGẮN GỌN, SÚC TÍCH. KHÔNG giải thích các trạng thái đơn hàng trừ khi được yêu cầu. 
+        - Với đơn kẹt/giao chậm: Báo tổng số lượng và liệt kê các mã đơn kèm số ngày bị trễ.
+        - Với thông tin shop: Chỉ báo tên shop, seller (chủ shop) và team quản lý.
+        - Với danh sách đơn theo trạng thái: Chỉ liệt kê số lượng tổng, sau đó liệt kê danh sách tối đa 10 đơn gần nhất (Mã đơn - Marketplace ID - Ngày tạo).
+        - Với tra cứu 1 đơn: TÓM TẮT súc tích các thông tin chính. Nếu chưa có tracking, chỉ đưa ra NGÀY DỰ KIẾN cụ thể.
         - ĐỊNH DẠNG: Bullet points.
         - BẢO MẬT: Người đang hỏi là {username} ({user_role.upper()}).
           + Chỉ báo trạng thái và mã vận đơn. Không lộ thông tin nhạy cảm.
@@ -317,8 +510,8 @@ class ProductionSkill(BaseSkill):
         system_prompt = await self.get_system_prompt(user_role, username)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_input)]
         
-        # Cung cấp cả 2 tools cho Agent
-        tools = [get_efs_order_info, get_provider_tracking]
+        # Cung cấp các tools cho Agent
+        tools = [get_efs_order_info, get_provider_tracking, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
         llm_with_tools = self.llm.bind_tools(tools)
         
         total_tokens = 0
@@ -344,6 +537,18 @@ class ProductionSkill(BaseSkill):
                     messages.append(tool_result)
                 elif tool_call["name"] == "get_provider_tracking":
                     tool_result = await get_provider_tracking.ainvoke(tool_call)
+                    messages.append(tool_result)
+                elif tool_call["name"] == "get_pending_orders":
+                    tool_result = await get_pending_orders.ainvoke(tool_call)
+                    messages.append(tool_result)
+                elif tool_call["name"] == "search_shop_info":
+                    tool_result = await search_shop_info.ainvoke(tool_call)
+                    messages.append(tool_result)
+                elif tool_call["name"] == "get_production_bottlenecks":
+                    tool_result = await get_production_bottlenecks.ainvoke(tool_call)
+                    messages.append(tool_result)
+                elif tool_call["name"] == "get_delivery_delays":
+                    tool_result = await get_delivery_delays.ainvoke(tool_call)
                     messages.append(tool_result)
                     
         return "Tôi xin lỗi, quá trình xử lý yêu cầu của bạn quá phức tạp và đã vượt quá giới hạn cho phép.", total_tokens

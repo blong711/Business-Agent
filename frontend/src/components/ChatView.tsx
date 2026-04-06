@@ -16,6 +16,7 @@ interface ChatViewProps {
   currentUser: string;
   currentUserRole: string;
   loading: boolean;
+  isHistoryLoading: boolean;
   onSendMessage: (text: string) => void;
   input: string;
   setInput: (text: string) => void;
@@ -27,6 +28,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   currentUser,
   currentUserRole,
   loading,
+  isHistoryLoading,
   onSendMessage,
   input,
   setInput,
@@ -187,63 +189,76 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
 
       <div className="messages-container">
-        {messages.map((msg, idx) => (
-          <div 
-            key={msg.id} 
-            className={`message-wrapper ${msg.sender}`} 
-            style={{ animationDelay: `${idx * 0.1}s` }}
-          >
-            <div className={`message-content-wrapper ${msg.sender === 'bot' ? 'align-start' : 'align-end'}`}>
-              <div className={`message-author ${msg.sender}`}>
-                <div className="avatar-mini">
-                  {msg.sender === 'bot' ? <Bot size={14} /> : <User size={14} />}
-                </div>
-                <span>{msg.sender === 'bot' ? 'Nexus AI' : (currentUser || 'User')}</span>
-                
-                {msg.sender === 'bot' && (
-                  <button 
-                    className={`btn-play-msg ${isPlaying === msg.id ? 'playing' : ''}`}
-                    onClick={() => playVoice(msg.text, msg.id)}
-                  >
-                    {isPlaying === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Volume2 size={12} />}
-                  </button>
-                )}
-              </div>
-              
-              <div className={`glass-bubble ${msg.sender}-bubble shadow-glow`}>
-                <Markdown options={{ forceBlock: true }}>{msg.text}</Markdown>
-                {msg.sender === 'bot' && isPlaying === msg.id && (
-                  <div className="speaking-indicator">
-                    <div className="line"></div>
-                    <div className="line"></div>
-                    <div className="line"></div>
+        {isHistoryLoading ? (
+          <div className="history-loading-container">
+            <div className="spinner-wrapper">
+              <div className="spinner-outer"></div>
+              <div className="spinner-inner"></div>
+              <Bot size={28} className="spinner-bot-icon" />
+            </div>
+            <p className="loading-text">{t.loadingHistory}</p>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg, idx) => (
+              <div 
+                key={msg.id} 
+                className={`message-wrapper ${msg.sender}`} 
+                style={{ animationDelay: (msg.id.toString().startsWith('hist-') || msg.id === '1') ? '0s' : '0.1s' }}
+              >
+                <div className={`message-content-wrapper ${msg.sender === 'bot' ? 'align-start' : 'align-end'}`}>
+                  <div className={`message-author ${msg.sender}`}>
+                    <div className="avatar-mini">
+                      {msg.sender === 'bot' ? <Bot size={14} /> : <User size={14} />}
+                    </div>
+                    <span>{msg.sender === 'bot' ? 'Nexus AI' : (currentUser || 'User')}</span>
+                    
+                    {msg.sender === 'bot' && (
+                      <button 
+                        className={`btn-play-msg ${isPlaying === msg.id ? 'playing' : ''}`}
+                        onClick={() => playVoice(msg.text, msg.id)}
+                      >
+                        {isPlaying === msg.id ? <Loader2 size={12} className="animate-spin" /> : <Volume2 size={12} />}
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="message-time">
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        {loading && (
-          <div className="message-wrapper bot slide-up">
-            <div className="message-content-wrapper align-start">
-              <div className="message-author bot">
-                <Bot size={14} color="#a78bfa" />
-                <span>Nexus AI</span>
-              </div>
-              <div className="message-bubble bot-bubble glass-bubble">
-                <div className="typing-indicator">
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
+                  
+                  <div className={`glass-bubble ${msg.sender}-bubble shadow-glow`}>
+                    <Markdown options={{ forceBlock: true }}>{msg.text}</Markdown>
+                    {msg.sender === 'bot' && isPlaying === msg.id && (
+                      <div className="speaking-indicator">
+                        <div className="line"></div>
+                        <div className="line"></div>
+                        <div className="line"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="message-time">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            ))}
+            
+            {loading && (
+              <div className="message-wrapper bot slide-up">
+                <div className="message-content-wrapper align-start">
+                  <div className="message-author bot">
+                    <Bot size={14} color="#a78bfa" />
+                    <span>Nexus AI</span>
+                  </div>
+                  <div className="message-bubble bot-bubble glass-bubble">
+                    <div className="typing-indicator">
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                      <span className="typing-dot"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
         <div ref={scrollRef} style={{ height: 1 }} />
       </div>

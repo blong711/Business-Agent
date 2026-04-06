@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   // Admin States
   const [userList, setUserList] = useState<UserItem[]>([]);
@@ -53,6 +54,7 @@ const App: React.FC = () => {
   };
 
   const loadHistory = async (user: string) => {
+    setIsHistoryLoading(true);
     try {
       const data = await apiService.fetchHistory(user);
       const historyMsgs: Message[] = data.map((msg: any, i: number) => ({
@@ -78,6 +80,8 @@ const App: React.FC = () => {
       setMessages([
         { id: '1', text: `Chào mừng **${user}**!`, sender: 'bot', time: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) }
       ]);
+    } finally {
+      setIsHistoryLoading(false);
     }
   };
 
@@ -157,8 +161,6 @@ const App: React.FC = () => {
         handleLinkTelegram(data.username, tid);
       }
 
-      setViewMode('chat');
-      loadHistory(data.username);
       setViewMode('chat');
       loadHistory(data.username);
     } catch (err: any) {
@@ -347,6 +349,7 @@ const App: React.FC = () => {
                 currentUser={currentUser} 
                 currentUserRole={currentUserRole} 
                 loading={loading}
+                isHistoryLoading={isHistoryLoading}
                 onSendMessage={handleSendMessage}
                 input={input}
                 setInput={setInput}

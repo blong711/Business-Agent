@@ -29,8 +29,8 @@ class Orchestrator:
             return "production", 0
         
         # 2. Check for Production keywords
-        if any(kw in user_input_lower for kw in ["đơn hàng", "trạng thái", "tracking", "vận chuyển", "sản xuất"]):
-            if re.search(r'#?\d+', user_input): # Có mã số đi kèm
+        if any(kw in user_input_lower for kw in ["đơn hàng", "trạng thái", "tracking", "vận chuyển", "sản xuất", "shop", "cửa hàng"]):
+            if re.search(r'#?\d+', user_input) or any(kw in user_input_lower for kw in ["shop", "cửa hàng"]): 
                 return "production", 0
 
         # 3. Check for Accounting keywords
@@ -48,9 +48,9 @@ class Orchestrator:
         # -- SLOW PATH: LLM Classification --
         prompt = f"""
         Nhiệm vụ của bạn là phân loại một yêu cầu của khách hàng vào một trong các bộ phận sau:
-        - 'cskh': Nếu hỏi về hỗ trợ, khiếu nại, thông tin sản phẩm, HOẶC xem/phân tích lịch sử tin nhắn Telegram, thông tin thành viên, tóm tắt nhóm, sắc thái tin nhắn.
+        - 'cskh': Nếu hỏi về hỗ trợ, khiếu nại, thông tin sản phẩm, HOẶC tóm tắt/phân tích tin nhắn Telegram.
         - 'accounting': Nếu hỏi về tiền bạc, doanh thu, hóa đơn, bảng lương.
-        - 'production': Nếu hỏi về lịch sản xuất, tiến độ, tồn kho vật tư, kiểm tra mã đơn hàng, trạng thái tracking, EFS.
+        - 'production': Nếu hỏi về sản xuất, đơn hàng, tracking, HOẶC tra cứu thông tin shop/cửa hàng (vd: shop Taylor của ai).
         - 'general': Nếu chỉ là chào hỏi hoặc nội dung khác.
 
         Chỉ trả về DUY NHẤT một từ khóa trong danh sách trên (cskh, accounting, production, general).
