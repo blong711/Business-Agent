@@ -18,9 +18,6 @@ interface Agent {
 }
 
 interface ProviderKeys {
-  customcat_key: string;
-  pentifine_key: string;
-  merchize_key: string;
   model_api_key: string;
   model_api_url: string;
   default_model: string;
@@ -39,9 +36,6 @@ export const AdminAgentSettings: React.FC<AdminAgentSettingsProps> = ({ lang }) 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [keys, setKeys] = useState<ProviderKeys>({
-    customcat_key: '',
-    pentifine_key: '',
-    merchize_key: '',
     model_api_key: '',
     model_api_url: '',
     default_model: '',
@@ -308,39 +302,6 @@ export const AdminAgentSettings: React.FC<AdminAgentSettingsProps> = ({ lang }) 
             </div>
           </div>
 
-          <div className="config-divider"></div>
-
-          {/* Production Partners Section */}
-          <div className="config-category">
-            <h4 className="category-title">Production Partners</h4>
-            <div className="keys-grid">
-              {[
-                { id: 'customcat_key' as const, label: t.customCatKey, val: keys.customcat_key },
-                { id: 'pentifine_key' as const, label: t.pentifineKey, val: keys.pentifine_key },
-                { id: 'merchize_key' as const, label: t.merchizeKey, val: keys.merchize_key },
-              ].map(item => (
-                <div key={item.id} className="key-input-group">
-                  <label>{item.label}</label>
-                  <div className="input-with-actions">
-                    <input 
-                      type={showKeys[item.id] ? "text" : "password"} 
-                      value={item.val || ''}
-                      onChange={e => setKeys({...keys, [item.id]: e.target.value})}
-                      placeholder={t.keyPlaceholder}
-                    />
-                    <div className="input-actions">
-                      <button className="action-icon-btn" onClick={() => toggleShowKey(item.id)}>
-                        {showKeys[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                      <button className="action-icon-btn" onClick={() => copyToClipboard(item.val)}>
-                        <Copy size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="section-footer">

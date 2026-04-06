@@ -13,15 +13,6 @@ from ..db.mongodb import mongodb
 order_cache = {}
 CACHE_TTL = 300  # 5 mins
 
-async def get_db_provider_keys() -> dict:
-    """Helper để lấy API Key từ MongoDB, fallback về settings."""
-    doc = await mongodb.db.system_settings.find_one({"key": "provider_keys"})
-    db_keys = doc.get("value", {}) if doc else {}
-    return {
-        "customcat": db_keys.get("customcat_key") or settings.CUSTOMCAT_API_KEY,
-        "pentifine": db_keys.get("pentifine_key") or settings.PENTIFINE_API_KEY,
-        "merchize": db_keys.get("merchize_key") or settings.MERCHIZE_API_KEY
-    }
 
 @tool
 async def get_efs_order_info(order_id: str) -> str:
@@ -275,189 +266,12 @@ async def get_delivery_delays(days: int = 15) -> str:
         except Exception as e:
             return f"Lỗi khi lấy danh sách đơn giao chậm: {str(e)}"
 
-@tool
-async def get_provider_tracking(print_provider: str, reference_id: str, external_id: str = None) -> str:
-    """Tra cứu mã vận đơn (tracking number) trực tiếp từ API của nhà in (Print Provider). 
-    Lưu ý: 
-    - Với PENTIFINE: BẮT BUỘC dùng marketplace_order_id (mã đơn sàn) làm tham số external_id.
-    - Với các nhà in khác: Có thể dùng reference_id.
-    """
-    if not print_provider:
-        return "Thiếu thông tin print_provider."
-
-    provider_key = print_provider.upper()
-    
-    # 1. Cấu hình đặc thù cho CUSTOMCAT
-    if "CUSTOMCAT" in provider_key:
-        if not reference_id: return "CustomCat yêu cầu reference_id."
-        keys = await get_db_provider_keys()
-        api_key = keys.get("customcat")
-        if not api_key: return "Lỗi: Chưa cấu hình CUSTOMCAT_API_KEY trong hệ thống."
-        
-        base_url = "https://customcat-beta.mylocker.net"
-        url = f"{base_url}/api/v1/order/status/{reference_id}"
-        
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, params={"api_key": api_key}, timeout=15)
-                print(f"[DEBUG] CustomCat Response ({reference_id}): {response.status_code}")
-                if response.status_code == 200:
-                    data = response.json()
-                    raw_status = data.get('ORDER_STATUS') or data.get('status', 'pending')
-                    
-                    # Xử lý Shipments và Carrier Tracking URLs
-                    shipments = []
-                    raw_shipments = data.get('SHIPMENTS', [])
-                    
-                    tracking_info = {
-                        "tracking_number": data.get("tracking_number"),
-                        "tracking_url": data.get("tracking_url"),
-                        "carrier": "N/A"
-                    }
-
-                    if isinstance(raw_shipments, list) and len(raw_shipments) > 0:
-                        for boat in raw_shipments:
-                            tid = boat.get('TRACKING_ID')
-                            carrier = boat.get('VENDOR', '').upper()
-                            if tid:
-                                t_url = ""
-                                if 'USPS' in carrier:
-                                    t_url = f"https://tools.usps.com/go/TrackConfirmAction?tLabels={tid}"
-                                elif 'UPS' in carrier:
-                                    t_url = f"https://www.ups.com/track?tracknum={tid}"
-                                elif 'FEDEX' in carrier:
-                                    t_url = f"https://www.fedex.com/fedextrack/?trknbr={tid}"
-                                elif 'DHL' in carrier:
-                                    t_url = f"https://www.dhl.com/en/express/tracking.html?AWB={tid}"
-                                
-                                if not tracking_info["tracking_number"]:
-                                    tracking_info["tracking_number"] = tid
-                                    tracking_info["tracking_url"] = t_url
-                                    tracking_info["carrier"] = carrier
-                                
-                                shipments.append({"id": tid, "carrier": carrier, "url": t_url})
-
-                    return json.dumps({
-                        "provider": "CustomCat",
-                        "status": raw_status,
-                        "tracking_number": tracking_info["tracking_number"],
-                        "tracking_url": tracking_info["tracking_url"],
-                        "carrier": tracking_info["carrier"],
-                        "all_shipments": shipments,
-                        "note": "Thông tin từ CustomCat API"
-                    }, ensure_ascii=False)
-                else:
-                    return f"CustomCat báo: Đơn {reference_id} hiện có trạng thái HTTP {response.status_code}."
-            except Exception as e:
-                return f"Lỗi kết nối CustomCat: {str(e)}"
-
-    # 2. Cấu hình cho PENTIFINE
-    if "PENTIFINE" in provider_key:
-        # Ưu tiên external_id (mã đơn sàn) cho Pentifine theo yêu cầu của user
-        target_id = external_id or reference_id
-        if not target_id: return "Pentifine yêu cầu marketplace_order_id làm external_id."
-        
-        keys = await get_db_provider_keys()
-        api_key = keys.get("pentifine")
-        if not api_key: return "Lỗi: Chưa cấu hình PENTIFINE_API_KEY trong hệ thống (kiểm tra file .env)."
-        
-        base_url = "https://app.pentifine.com"
-        url = f"{base_url}/api/v1/partner/order/{target_id}"
-        # Pentifine API thường sử dụng Bearer Token
-        headers = {"Authorization": f"Bearer {api_key}"}
-        
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, headers=headers, timeout=15)
-                print(f"[DEBUG] Pentifine Response ({target_id}): {response.status_code}")
-                if response.status_code == 200:
-                    raw_data = response.json()
-                    data = raw_data.get('data', raw_data)
-                    
-                    trackings = data.get('trackings', [])
-                    primary_tracking = next((t for t in trackings if t.get('is_primary')), None)
-                    if not primary_tracking and trackings:
-                        primary_tracking = trackings[0]
-                    
-                    return json.dumps({
-                        "provider": "Pentifine",
-                        "status": data.get('status', 'pending'),
-                        "tracking_number": primary_tracking.get('tracking_number') if primary_tracking else None,
-                        "tracking_url": primary_tracking.get('tracking_url') if primary_tracking else None,
-                        "note": "Thông tin trực tiếp từ Pentifine Core"
-                    }, ensure_ascii=False)
-                else:
-                    return f"Pentifine báo lỗi {response.status_code} (Unauthorized). Vui lòng kiểm tra lại API Key trong .env hoặc định dạng Header."
-            except Exception as e:
-                return f"Lỗi kết nối Pentifine: {str(e)}"
-
-    # 3. Cấu hình cho MERCHIZE
-    if "MERCHIZE" in provider_key:
-        if not reference_id: return "Merchize yêu cầu reference_order_id."
-        
-        keys = await get_db_provider_keys()
-        api_key = keys.get("merchize")
-        if not api_key: return "Lỗi: Chưa cấu hình MERCHIZE_API_KEY trong hệ thống."
-        
-        # Base URL do user cung cấp (ví dụ: b82273a6...bo-api)
-        base_url = "https://bo-group-2-1.merchize.com/wtulav8/bo-api"
-        url = f"{base_url}/orders/{reference_id}"
-        
-        # Merchize thường dùng Authorization: Bearer <token>
-        headers = {"Authorization": f"Bearer {api_key}"}
-        
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url, headers=headers, timeout=15)
-                print(f"[DEBUG] Merchize Response ({reference_id}): {response.status_code}")
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    return json.dumps({
-                        "provider": "Merchize",
-                        "status": data.get('status'),
-                        "tracking_number": data.get('tracking_number'),
-                        "tracking_url": data.get('tracking_url'),
-                        "estimated_delivery": data.get('estimated_delivery'),
-                        "note": "Thông tin trực tiếp từ Merchize API"
-                    }, ensure_ascii=False)
-                else:
-                    return f"Merchize báo lỗi {response.status_code}. Đơn {reference_id} có thể chưa được xử lý hoặc sai API key."
-            except Exception as e:
-                return f"Lỗi kết nối Merchize: {str(e)}"
-
-    # 4. Cấu hình cho các nhà in khác
-    if not reference_id: return "Thiếu reference_id để tra cứu."
-    provider_endpoints = {
-        "SHINE": f"https://api.shineon.com/v1/orders/{reference_id}/tracking",
-        "SPOD": f"https://api.spod.com/v1/orders/{reference_id}/status",
-        "GENERA": f"https://api.genera.io/v1/tracking/{reference_id}"
-    }
-    
-    url = provider_endpoints.get(provider_key)
-    if not url:
-        return f"Nhà in {print_provider} chưa được tích hợp API tra cứu nhanh."
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                return json.dumps({
-                    "tracking_number": data.get("tracking_number") or data.get("tracking_code"),
-                    "carrier": data.get("carrier") or "DHL/FedEx",
-                    "status": "Đã có thông tin từ nhà in"
-                }, ensure_ascii=False)
-            else:
-                return f"Thông báo từ nhà in {print_provider}: Hiện tại đơn {reference_id} vẫn đang trong quá trình sản xuất, chưa có tracking."
-        except Exception as e:
-            return f"Lỗi khi kết nối tới API của {print_provider}: {str(e)}"
 
 class ProductionSkill(BaseSkill):
     def __init__(self):
         super().__init__(
             name="Sản xuất & Vận hành",
-            description="Theo dõi lịch sản xuất, kiểm soát tồn kho và theo dõi tiến độ đơn hàng (bao gồm tra cứu tracking từ nhà in)."
+            description="Theo dõi lịch sản xuất, kiểm soát tồn kho và theo dõi tiến độ đơn hàng thông qua hệ thống EFS nội bộ."
         )
 
     async def get_capabilities(self) -> List[dict]:
@@ -466,8 +280,7 @@ class ProductionSkill(BaseSkill):
             {"id": "get_pending_orders", "name": "Thống kê đơn theo trạng thái", "desc": "Đếm và liệt kê các đơn: pending, in_production, on_hold, v.v."},
             {"id": "search_shop_info", "name": "Tra cứu thông tin Shop", "desc": "Tìm kiếm chủ sở hữu và team quản lý của một cửa hàng."},
             {"id": "get_production_bottlenecks", "name": "Cảnh báo đơn kẹt sản xuất", "desc": "Tìm các đơn chưa có tracking sau 7 ngày."},
-            {"id": "get_delivery_delays", "name": "Cảnh báo đơn giao chậm", "desc": "Tìm các đơn ship lâu nhưng chưa delivered."},
-            {"id": "get_provider_tracking", "name": "Tra cứu Tracking nhà in", "desc": "Gọi API trực tiếp nhà in (Pentifine, Merchize, CustomCat)."}
+            {"id": "get_delivery_delays", "name": "Cảnh báo đơn giao chậm", "desc": "Tìm các đơn ship lâu nhưng chưa delivered."}
         ]
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
@@ -495,11 +308,7 @@ class ProductionSkill(BaseSkill):
         3. Sử dụng tool 'search_shop_info' khi user hỏi các câu hỏi về thông tin cửa hàng.
         4. Sử dụng tool 'get_production_bottlenecks' khi user hỏi về các đơn hàng bị kẹt, sản xuất quá lâu chưa có tracking.
         5. Sử dụng tool 'get_delivery_delays' khi user hỏi về các đơn hàng giao chậm, ship lâu rồi chưa tới.
-        6. Nếu hỏi về TRACKING mà EFS chưa có, hãy dùng 'get_provider_tracking' tra cứu nhà in:
-           - Với PENTIFINE: Bạn PHẢI truyền 'marketplace_order_id' (ví dụ: 112-...) vào tham số 'external_id'.
-           - Với MERCHIZE: Bạn PHẢI dùng 'reference_order_id' (ví dụ: MCZ-...) truyền vào tham số 'reference_id'.
-           - Với các nhà in khác (CustomCat, Shine, v.v.): Dùng 'reference_order_id' truyền vào 'reference_id'.
-        4. Nếu CẢ HAI đều chưa có tracking, hãy dùng trường 'sent_to_print_partner_at' (ngày gửi sang nhà in) cộng với số ngày trong BẢNG THỜI GIAN SẢN XUẤT ở trên để tính toán ngày dự kiến có tracking cho khách hàng.
+        6. Nếu CẢ HAI đều chưa có tracking, hãy dùng trường 'sent_to_print_partner_at' (ngày gửi sang nhà in) cộng với số ngày trong BẢNG THỜI GIAN SẢN XUẤT ở trên để tính toán ngày dự kiến có tracking cho khách hàng.
            + Quan trọng: Phải lấy đúng loại sản phẩm từ danh sách 'items' để tra cứu trong bảng.
            + Ví dụ: Đơn Mug gửi đi ngày 01/04 -> Dự kiến có tracking vào ngày 03/04 hoặc 04/04.
         
@@ -535,8 +344,7 @@ class ProductionSkill(BaseSkill):
         system_prompt = await self.get_system_prompt(user_role, username)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_input)]
         
-        # Cung cấp các tools cho Agent
-        all_tools = [get_efs_order_info, get_provider_tracking, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
+        all_tools = [get_efs_order_info, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
         tools = await self.filter_tools_by_permissions("production", all_tools, user_role)
         llm_with_tools = self.llm.bind_tools(tools)
         
@@ -560,9 +368,6 @@ class ProductionSkill(BaseSkill):
             for tool_call in response.tool_calls:
                 if tool_call["name"] == "get_efs_order_info":
                     tool_result = await get_efs_order_info.ainvoke(tool_call)
-                    messages.append(tool_result)
-                elif tool_call["name"] == "get_provider_tracking":
-                    tool_result = await get_provider_tracking.ainvoke(tool_call)
                     messages.append(tool_result)
                 elif tool_call["name"] == "get_pending_orders":
                     tool_result = await get_pending_orders.ainvoke(tool_call)
