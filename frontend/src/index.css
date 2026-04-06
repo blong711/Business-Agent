@@ -239,7 +239,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .aura-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 24px;
   margin-bottom: 40px;
   padding: 48px 40px;
@@ -2291,6 +2291,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   display: flex;
   gap: 12px;
   align-items: center;
+  margin-left: auto;
 }
 
 .aura-btn {
