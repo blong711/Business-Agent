@@ -86,10 +86,13 @@ export const AdminMarketing: React.FC<{ lang: Language }> = ({ lang }) => {
                 <div className="niche-info">
                   <span className="niche-name">{n.niche}</span>
                   <span className={`status-badge ${n.status}`}>{n.status.toUpperCase()}</span>
-                </div>
-                <div className="niche-stat">
-                  <span className="stat-label">{t.growth}</span>
-                  <span className="stat-value text-green">{n.growth}</span>
+                  <div className="niche-stat">
+                    <span className="stat-label">{t.growth}</span>
+                    <span className="stat-value text-green">
+                      <TrendingUp size={16} />
+                      {n.growth}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
