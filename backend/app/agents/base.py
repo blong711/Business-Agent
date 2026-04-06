@@ -11,7 +11,7 @@ class BaseSkill:
     def __init__(self, name: str, description: str):
         self.name = name
         self.description = description
-        self.llm = llm_manager.get_chat_model()
+        self._llm = None
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         raise NotImplementedError("Skill phải tự định nghĩa system prompt.")
@@ -53,15 +53,20 @@ class BaseSkill:
         """
         Gửi tin nhắn và nhận phản hồi đơn giản (chưa bao gồm dùng Tools).
         """
+        # Load dynamic config
+        keys = await self.get_provider_keys()
+        llm = llm_manager.get_chat_model(
+            model_name=keys.get("default_model"),
+            api_key=keys.get("model_api_key"),
+            api_base=keys.get("model_api_url")
+        )
+        
         system_prompt = await self.get_system_prompt(user_role, username)
         messages = [SystemMessage(content=system_prompt)]
         
-        # Thêm lịch sử nếu có...
-        # messages.extend(history) 
-        
         messages.append(HumanMessage(content=user_input))
         
-        response = await self.llm.ainvoke(messages)
+        response = await llm.ainvoke(messages)
         usage = getattr(response, "usage_metadata", {})
         total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
         return response.content, total_tokens
@@ -76,5 +81,12 @@ class BaseSkill:
         return {
             "customcat": db_keys.get("customcat_key") or settings.CUSTOMCAT_API_KEY,
             "pentifine": db_keys.get("pentifine_key") or settings.PENTIFINE_API_KEY,
-            "merchize": db_keys.get("merchize_key") or settings.MERCHIZE_API_KEY
+            "merchize": db_keys.get("merchize_key") or settings.MERCHIZE_API_KEY,
+            "model_api_key": db_keys.get("model_api_key") or settings.DEEPSEEK_API_KEY,
+            "model_api_url": db_keys.get("model_api_url") or "https://api.deepseek.com",
+            "default_model": db_keys.get("default_model") or settings.DEFAULT_MODEL,
+            "telegram_token": db_keys.get("telegram_token") or settings.TELEGRAM_BOT_TOKEN,
+            "eleven_key": db_keys.get("eleven_key") or settings.ELEVENLABS_API_KEY,
+            "voice_id": db_keys.get("voice_id") or settings.ELEVENLABS_VOICE_ID,
+            "eleven_model_id": db_keys.get("eleven_model_id") or settings.ELEVENLABS_MODEL_ID
         }

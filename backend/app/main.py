@@ -170,6 +170,13 @@ class ProviderKeys(BaseModel):
     customcat_key: Optional[str] = None
     pentifine_key: Optional[str] = None
     merchize_key: Optional[str] = None
+    model_api_key: Optional[str] = None
+    model_api_url: Optional[str] = None
+    default_model: Optional[str] = None
+    telegram_token: Optional[str] = None
+    eleven_key: Optional[str] = None
+    voice_id: Optional[str] = None
+    eleven_model_id: Optional[str] = None
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -420,13 +427,31 @@ async def get_provider_keys():
     if doc:
         keys = doc.get("value", {})
         return ProviderKeys(
-            customcat_key=keys.get("customcat_key"),
-            pentifine_key=keys.get("pentifine_key"),
-            merchize_key=keys.get("merchize_key")
+            customcat_key=keys.get("customcat_key") or settings.CUSTOMCAT_API_KEY,
+            pentifine_key=keys.get("pentifine_key") or settings.PENTIFINE_API_KEY,
+            merchize_key=keys.get("merchize_key") or settings.MERCHIZE_API_KEY,
+            model_api_key=keys.get("model_api_key") or settings.DEEPSEEK_API_KEY,
+            model_api_url=keys.get("model_api_url") or "https://api.deepseek.com",
+            default_model=keys.get("default_model") or settings.DEFAULT_MODEL,
+            telegram_token=keys.get("telegram_token") or settings.TELEGRAM_BOT_TOKEN,
+            eleven_key=keys.get("eleven_key") or settings.ELEVENLABS_API_KEY,
+            voice_id=keys.get("voice_id") or settings.ELEVENLABS_VOICE_ID,
+            eleven_model_id=keys.get("eleven_model_id") or settings.ELEVENLABS_MODEL_ID
         )
     
-    # Mặc định lấy rỗng nếu chưa cấu hình
-    return ProviderKeys()
+    # Mặc định lấy từ settings nếu chưa cấu hình trong DB
+    return ProviderKeys(
+        customcat_key=settings.CUSTOMCAT_API_KEY,
+        pentifine_key=settings.PENTIFINE_API_KEY,
+        merchize_key=settings.MERCHIZE_API_KEY,
+        model_api_key=settings.DEEPSEEK_API_KEY,
+        model_api_url="https://api.deepseek.com",
+        default_model=settings.DEFAULT_MODEL,
+        telegram_token=settings.TELEGRAM_BOT_TOKEN,
+        eleven_key=settings.ELEVENLABS_API_KEY,
+        voice_id=settings.ELEVENLABS_VOICE_ID,
+        eleven_model_id=settings.ELEVENLABS_MODEL_ID
+    )
 
 @app.put(f"{settings.API_V1_STR}/settings/provider-keys")
 async def update_provider_keys(keys: ProviderKeys):

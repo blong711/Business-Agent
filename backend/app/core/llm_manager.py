@@ -11,17 +11,26 @@ class LLMManager:
     """
     
     @staticmethod
-    def get_chat_model(model_name: str = None) -> BaseChatModel:
+    def get_chat_model(
+        model_name: str = None, 
+        api_key: str = None, 
+        api_base: str = None
+    ) -> BaseChatModel:
         model = model_name or settings.DEFAULT_MODEL
         
-        # DeepSeek (OpenAI-compatible)
-        if model.startswith("deepseek"):
-            if not settings.DEEPSEEK_API_KEY:
-                raise ValueError("Thiếu DEEPSEEK_API_KEY trong cấu hình.")
+        # OpenAI-compatible (DeepSeek, Groq, OpenRouter, etc.)
+        # If api_base or deepseek prefix matches
+        if api_base or model.startswith("deepseek") or model.startswith("gpt"):
+            effective_key = api_key or settings.DEEPSEEK_API_KEY
+            effective_base = api_base or "https://api.deepseek.com"
+            
+            if not effective_key:
+                raise ValueError("Thiếu API Key cho mô hình AI.")
+                
             return ChatOpenAI(
                 model=model,
-                openai_api_key=settings.DEEPSEEK_API_KEY,
-                openai_api_base="https://api.deepseek.com",
+                openai_api_key=effective_key,
+                openai_api_base=effective_base,
                 temperature=0.7
             )
             

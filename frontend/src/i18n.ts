@@ -152,6 +152,13 @@ export interface TranslationSchema {
   customCatKey: string;
   pentifineKey: string;
   merchizeKey: string;
+  modelApiKey: string;
+  modelApiUrl: string;
+  defaultModel: string;
+  telegramToken: string;
+  elevenKey: string;
+  voiceId: string;
+  elevenModelId: string;
   keyPlaceholder: string;
   updateSuccess: string;
   agent_production: string;
@@ -369,6 +376,13 @@ export const translations: Record<Language, TranslationSchema> = {
     agentCapabilities: 'Danh sách kỹ năng',
     providerKeysTitle: 'Cấu hình API Key Nhà in',
     providerKeysSubtitle: 'QUẢN LÝ KHÓA TRUY CẬP TRỰC TIẾP CHO CÁC ĐƠN VỊ PRODUCTION',
+    modelApiKey: 'Model API Key',
+    modelApiUrl: 'Model API URL',
+    defaultModel: 'Mô hình AI mặc định',
+    telegramToken: 'Telegram Bot Token',
+    elevenKey: 'ElevenLabs API Key',
+    voiceId: 'ElevenLabs Voice ID',
+    elevenModelId: 'ElevenLabs Model ID',
     customCatKey: 'CustomCat API Key',
     pentifineKey: 'Pentifine API Key',
     merchizeKey: 'Merchize API Key',
@@ -590,6 +604,13 @@ export const translations: Record<Language, TranslationSchema> = {
     agentCapabilities: 'Skills List',
     providerKeysTitle: 'Provider API Keys Config',
     providerKeysSubtitle: 'MANAGE DIRECT ACCESS KEYS FOR PRODUCTION PARTNER',
+    modelApiKey: 'Model API Key',
+    modelApiUrl: 'Model API URL',
+    defaultModel: 'Default AI Model',
+    telegramToken: 'Telegram Bot Token',
+    elevenKey: 'ElevenLabs API Key',
+    voiceId: 'ElevenLabs Voice ID',
+    elevenModelId: 'ElevenLabs Model ID',
     customCatKey: 'CustomCat API Key',
     pentifineKey: 'Pentifine API Key',
     merchizeKey: 'Merchize API Key',

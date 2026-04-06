@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     PENTIFINE_API_KEY: Optional[str] = None
     MERCHIZE_API_KEY: Optional[str] = None
     
+    # ElevenLabs
+    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_VOICE_ID: Optional[str] = "pNInz6obpg8ndEao7mAl" # Default voice
+    ELEVENLABS_MODEL_ID: Optional[str] = "eleven_multilingual_v2"
+    
     class Config:
         env_file = ".env"
 

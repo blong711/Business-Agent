@@ -20,7 +20,6 @@ class Orchestrator:
             "production": ProductionSkill(),
             "marketing": MarketingSkill()
         }
-        self.classifier_llm = llm_manager.get_chat_model()
 
     async def classify_intent(self, user_input: str) -> tuple[str, int]:
         # -- FAST PATH: Heuristic checks to save tokens --
@@ -52,6 +51,21 @@ class Orchestrator:
             return "general", 0
 
         # -- SLOW PATH: LLM Classification --
+        # Fetch dynamic config
+        from ..db.mongodb import mongodb
+        doc = await mongodb.db.system_settings.find_one({"key": "provider_keys"})
+        db_keys = doc.get("value", {}) if doc else {}
+        
+        api_key = db_keys.get("model_api_key") or settings.DEEPSEEK_API_KEY
+        api_base = db_keys.get("model_api_url") or "https://api.deepseek.com"
+        model_name = db_keys.get("default_model") or settings.DEFAULT_MODEL
+        
+        classifier_llm = llm_manager.get_chat_model(
+            model_name=model_name,
+            api_key=api_key,
+            api_base=api_base
+        )
+        
         prompt = f"""
         Nhiệm vụ của bạn là phân loại một yêu cầu của khách hàng vào một trong các bộ phận sau:
         - 'cskh': Nếu hỏi về hỗ trợ, khiếu nại, thông tin sản phẩm, HOẶC tóm tắt/phân tích tin nhắn Telegram.
@@ -59,12 +73,12 @@ class Orchestrator:
         - 'production': Nếu hỏi về sản xuất, đơn hàng, tracking, HOẶC tra cứu thông tin shop/cửa hàng.
         - 'marketing': Nếu yêu cầu viết content, title sản phẩm, mô tả bán hàng, nội dung quảng cáo.
         - 'general': Nếu chỉ là chào hỏi hoặc nội dung khác.
-
+ 
         Chỉ trả về DUY NHẤT một từ khóa trong danh sách trên (cskh, accounting, production, general).
         Yêu cầu: '{user_input}'
         """
         messages = [HumanMessage(content=prompt)]
-        response = await self.classifier_llm.ainvoke(messages)
+        response = await classifier_llm.ainvoke(messages)
         intent = response.content.strip().lower()
         
         usage = getattr(response, "usage_metadata", {})

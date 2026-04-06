@@ -21,6 +21,13 @@ interface ProviderKeys {
   customcat_key: string;
   pentifine_key: string;
   merchize_key: string;
+  model_api_key: string;
+  model_api_url: string;
+  default_model: string;
+  telegram_token: string;
+  eleven_key: string;
+  voice_id: string;
+  eleven_model_id: string;
 }
 
 interface AdminAgentSettingsProps {
@@ -34,7 +41,14 @@ export const AdminAgentSettings: React.FC<AdminAgentSettingsProps> = ({ lang }) 
   const [keys, setKeys] = useState<ProviderKeys>({
     customcat_key: '',
     pentifine_key: '',
-    merchize_key: ''
+    merchize_key: '',
+    model_api_key: '',
+    model_api_url: '',
+    default_model: '',
+    telegram_token: '',
+    eleven_key: '',
+    voice_id: '',
+    eleven_model_id: ''
   });
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState(false);
@@ -199,32 +213,134 @@ export const AdminAgentSettings: React.FC<AdminAgentSettingsProps> = ({ lang }) 
           </div>
         </div>
 
-        <div className="keys-grid">
-          {[
-            { id: 'customcat', label: t.customCatKey, val: keys.customcat_key },
-            { id: 'pentifine', label: t.pentifineKey, val: keys.pentifine_key },
-            { id: 'merchize', label: t.merchizeKey, val: keys.merchize_key },
-          ].map(item => (
-            <div key={item.id} className="key-input-group">
-              <label>{item.label}</label>
-              <div className="input-with-actions">
-                <input 
-                  type={showKeys[item.id] ? "text" : "password"} 
-                  value={item.val}
-                  onChange={e => setKeys({...keys, [`${item.id}_key`]: e.target.value})}
-                  placeholder={t.keyPlaceholder}
-                />
-                <div className="input-actions">
-                  <button className="action-icon-btn" onClick={() => toggleShowKey(item.id)}>
-                    {showKeys[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                  <button className="action-icon-btn" onClick={() => copyToClipboard(item.val)}>
-                    <Copy size={16} />
-                  </button>
+        <div className="config-categories">
+          {/* AI Configuration Section */}
+          <div className="config-category">
+            <h4 className="category-title">AI Intelligence</h4>
+            <div className="keys-grid">
+              {[
+                { id: 'model_api_key' as const, label: t.modelApiKey, val: keys.model_api_key },
+                { id: 'model_api_url' as const, label: t.modelApiUrl, val: keys.model_api_url },
+                { id: 'default_model' as const, label: t.defaultModel, val: keys.default_model },
+              ].map(item => (
+                <div key={item.id} className="key-input-group">
+                  <label>{item.label}</label>
+                  <div className="input-with-actions">
+                    <input 
+                      type={showKeys[item.id] ? "text" : "password"} 
+                      value={item.val || ''}
+                      onChange={e => setKeys({...keys, [item.id]: e.target.value})}
+                      placeholder={t.keyPlaceholder}
+                    />
+                    <div className="input-actions">
+                      <button className="action-icon-btn" onClick={() => toggleShowKey(item.id)}>
+                        {showKeys[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button className="action-icon-btn" onClick={() => copyToClipboard(item.val)}>
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="config-divider"></div>
+
+          {/* Telegram Section */}
+          <div className="config-category">
+            <h4 className="category-title">Communication Hub</h4>
+            <div className="keys-grid">
+              <div className="key-input-group">
+                <label>{t.telegramToken}</label>
+                <div className="input-with-actions">
+                  <input 
+                    type={showKeys['telegram_token'] ? "text" : "password"} 
+                    value={keys.telegram_token}
+                    onChange={e => setKeys({...keys, telegram_token: e.target.value})}
+                    placeholder={t.keyPlaceholder}
+                  />
+                  <div className="input-actions">
+                    <button className="action-icon-btn" onClick={() => toggleShowKey('telegram_token')}>
+                      {showKeys['telegram_token'] ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                    <button className="action-icon-btn" onClick={() => copyToClipboard(keys.telegram_token)}>
+                      <Copy size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="config-divider"></div>
+
+          {/* ElevenLabs Section */}
+          <div className="config-category">
+            <h4 className="category-title">Voice & Audio (ElevenLabs)</h4>
+            <div className="keys-grid">
+              {[
+                { id: 'eleven_key' as const, label: t.elevenKey, val: keys.eleven_key },
+                { id: 'voice_id' as const, label: t.voiceId, val: keys.voice_id },
+                { id: 'eleven_model_id' as const, label: t.elevenModelId, val: keys.eleven_model_id },
+              ].map(item => (
+                <div key={item.id} className="key-input-group">
+                  <label>{item.label}</label>
+                  <div className="input-with-actions">
+                    <input 
+                      type={showKeys[item.id] ? "text" : "password"} 
+                      value={item.val || ''}
+                      onChange={e => setKeys({...keys, [item.id]: e.target.value})}
+                      placeholder={t.keyPlaceholder}
+                    />
+                    <div className="input-actions">
+                      <button className="action-icon-btn" onClick={() => toggleShowKey(item.id)}>
+                        {showKeys[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button className="action-icon-btn" onClick={() => copyToClipboard(item.val)}>
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="config-divider"></div>
+
+          {/* Production Partners Section */}
+          <div className="config-category">
+            <h4 className="category-title">Production Partners</h4>
+            <div className="keys-grid">
+              {[
+                { id: 'customcat_key' as const, label: t.customCatKey, val: keys.customcat_key },
+                { id: 'pentifine_key' as const, label: t.pentifineKey, val: keys.pentifine_key },
+                { id: 'merchize_key' as const, label: t.merchizeKey, val: keys.merchize_key },
+              ].map(item => (
+                <div key={item.id} className="key-input-group">
+                  <label>{item.label}</label>
+                  <div className="input-with-actions">
+                    <input 
+                      type={showKeys[item.id] ? "text" : "password"} 
+                      value={item.val || ''}
+                      onChange={e => setKeys({...keys, [item.id]: e.target.value})}
+                      placeholder={t.keyPlaceholder}
+                    />
+                    <div className="input-actions">
+                      <button className="action-icon-btn" onClick={() => toggleShowKey(item.id)}>
+                        {showKeys[item.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button className="action-icon-btn" onClick={() => copyToClipboard(item.val)}>
+                        <Copy size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="section-footer">
