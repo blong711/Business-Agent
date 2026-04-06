@@ -16,9 +16,11 @@ class Settings(BaseSettings):
     # Database
     MONGODB_URL: str = "mongodb://mongodb:27017" # URL mặc định cho Docker
     DATABASE_NAME: str = "ai_business_db"
-    
     # Bots
     TELEGRAM_BOT_TOKEN: Optional[str] = None
+    
+    # Frontend (Cấu hình domain thực tế trong .env)
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Print Providers
     CUSTOMCAT_API_KEY: Optional[str] = None

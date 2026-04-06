@@ -32,8 +32,8 @@ async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user:
         return
     
-    # URL ví dụ, bạn có thể chỉnh lại cho đúng domain production của mình
-    frontend_url = "http://localhost:3000"
+    # Sử dụng FRONTEND_URL từ Settings (được cấu hình trong .env)
+    frontend_url = settings.FRONTEND_URL
     link_url = f"{frontend_url}/?telegram_id={user.id}"
     
     msg = (
