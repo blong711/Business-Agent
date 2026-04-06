@@ -117,7 +117,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         audioRef.current.pause();
       }
       
-      const apiUrl = `http://localhost:8000/api/v1/voice/tts?text=${encodeURIComponent(text)}`;
+      const apiUrl = `http://${window.location.hostname}:8000/api/v1/voice/tts?text=${encodeURIComponent(text)}`;
       const audio = new Audio(apiUrl);
       audioRef.current = audio;
       

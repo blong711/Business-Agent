@@ -1088,12 +1088,12 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 
 /* Admin Base Table */
 .table-container {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  max-height: calc(100vh - 280px); /* Tự động tính toán chiều cao tối ưu */
   border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  scrollbar-gutter: stable; /* Giữ vị trí layout ổn định */
 }
 
 .custom-table {
@@ -1102,10 +1102,15 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 }
 
 .custom-table th {
-  background: rgba(15, 23, 42, 0.6);
-  padding: 18px 24px;
+  background: var(--dropdown-bg); /* Chế độ sticky cần background không đục */
+  padding: 20px 24px;
   text-align: left;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 2px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .th-content {
@@ -1117,9 +1122,11 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 }
 
 .custom-table td {
-  padding: 16px 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
-  font-size: 14px;
+  font-size: 15px;
+  vertical-align: middle;
+  min-width: 120px; /* Tránh co khít nội dung */
 }
 
 .custom-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
