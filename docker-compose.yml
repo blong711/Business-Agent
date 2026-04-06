@@ -25,7 +25,8 @@ services:
     env_file:
       - .env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    network_mode: host
+    networks:
+      - agent-network
 
   # 3. Giao diện Web Chat - Frontend React
   frontend:
