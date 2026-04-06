@@ -13,6 +13,18 @@ class BaseSkill:
         self.description = description
         self._llm = None
 
+    @property
+    async def llm(self):
+        """
+        Lấy LLM model dựa trên cấu hình hiện tại (DB hoặc Settings).
+        """
+        keys = await self.get_provider_keys()
+        return llm_manager.get_chat_model(
+            model_name=keys.get("default_model"),
+            api_key=keys.get("model_api_key"),
+            api_base=keys.get("model_api_url")
+        )
+
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         raise NotImplementedError("Skill phải tự định nghĩa system prompt.")
 

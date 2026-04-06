@@ -2,10 +2,11 @@ import os
 import time
 from typing import List, Optional
 from .base import BaseSkill
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 import httpx
 import json
+from ..core.llm_manager import llm_manager
 from ..core.config import settings
 from ..db.mongodb import mongodb
 
@@ -37,24 +38,33 @@ async def get_efs_order_info(order_id: str) -> str:
     
     async with httpx.AsyncClient() as client:
         try:
+            print(f"--- [DEBUG] Gọi EFS API: {url} ---")
             response = await client.get(url, headers=headers, timeout=15)
+            print(f"--- [DEBUG] EFS API Status: {response.status_code} ---")
             response.raise_for_status()
             raw_data = response.json()
+            print(f"--- [DEBUG] EFS API Data received (success={raw_data.get('success')}) ---")
             
-            # 3. Response Pruning (Save LOTS of tokens here)
+            # 3. Safe access helpers
+            def safe_get(base, *keys):
+                for key in keys:
+                    if base is None: return None
+                    base = base.get(key)
+                return base
+
             d = raw_data.get("data", {})
-            items = d.get("items", [])
+
+            items = d.get("items") or []
+            shipping = d.get("shipping_address") or {}
             
             # Lấy print_provider từ item đầu tiên nếu ở root là null
             print_provider = d.get("print_provider")
             if not print_provider and items:
-                # Thử tìm trong items[0].product.print_info.product_name
                 first_item = items[0]
-                product = first_item.get("product", {})
-                print_info = product.get("print_info", {})
+                product = first_item.get("product") or {}
+                print_info = product.get("print_info") or {}
                 print_provider = print_info.get("product_name")
 
-            # Lấy reference_order_id
             reference_order_id = d.get("reference_order_id") or d.get("fulfillment_order_id")
 
             pruned_data = {
@@ -67,15 +77,15 @@ async def get_efs_order_info(order_id: str) -> str:
                 "reference_order_id": reference_order_id,
                 "shipping_type": d.get("shipping_type"),
                 "customer": {
-                    "name": d.get("shipping_address", {}).get("full_name"),
-                    "location": f"{d.get('shipping_address', {}).get('city')}, {d.get('shipping_address', {}).get('state')}, {d.get('shipping_address', {}).get('country')}"
+                    "name": shipping.get("full_name"),
+                    "location": f"{shipping.get('city', 'N/A')}, {shipping.get('state', 'N/A')}, {shipping.get('country', 'N/A')}"
                 },
                 "items": [
                     {
-                        "title": item.get("product", {}).get("title"),
+                        "title": (item.get("product") or {}).get("title"),
                         "variant": item.get("variant"),
                         "quantity": item.get("quantity"),
-                        "print_provider_internal": item.get("product", {}).get("print_info", {}).get("product_name")
+                        "print_provider_internal": ((item.get("product") or {}).get("print_info") or {}).get("product_name")
                     } for item in items
                 ],
                 "production": {
@@ -85,11 +95,12 @@ async def get_efs_order_info(order_id: str) -> str:
                     "production_completed": d.get("production_completed_at") is not None,
                     "sent_to_print_partner_at": d.get("sent_to_print_partner_at")
                 },
-                "tracking": d.get("packages", [])
+                "tracking": d.get("packages") or []
             }
             
             # Store in cache
             order_cache[order_id] = (pruned_data, now)
+            print(f"--- [DEBUG] Pruned data: {json.dumps(pruned_data, ensure_ascii=False)[:300]}... ---")
             return json.dumps(pruned_data, ensure_ascii=False)
 
         except httpx.HTTPStatusError as e:
@@ -341,12 +352,20 @@ class ProductionSkill(BaseSkill):
         """
 
     async def chat(self, user_input: str, user_role: str = "user", username: str = "guest", history: list = []) -> tuple[str, int]:
+        # Tải cấu hình từ DB/Settings
+        keys = await self.get_provider_keys()
+        llm = llm_manager.get_chat_model(
+            model_name=keys.get("default_model"),
+            api_key=keys.get("model_api_key"),
+            api_base=keys.get("model_api_url")
+        )
+        
         system_prompt = await self.get_system_prompt(user_role, username)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_input)]
         
         all_tools = [get_efs_order_info, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
         tools = await self.filter_tools_by_permissions("production", all_tools, user_role)
-        llm_with_tools = self.llm.bind_tools(tools)
+        llm_with_tools = llm.bind_tools(tools)
         
         total_tokens = 0
         max_iterations = 5  # Giới hạn số vòng gọi tool để tránh loop vô tận
@@ -366,20 +385,27 @@ class ProductionSkill(BaseSkill):
             
             # Xử lý tất cả các yêu cầu gọi tool trong lượt này
             for tool_call in response.tool_calls:
-                if tool_call["name"] == "get_efs_order_info":
-                    tool_result = await get_efs_order_info.ainvoke(tool_call)
-                    messages.append(tool_result)
-                elif tool_call["name"] == "get_pending_orders":
-                    tool_result = await get_pending_orders.ainvoke(tool_call)
-                    messages.append(tool_result)
-                elif tool_call["name"] == "search_shop_info":
-                    tool_result = await search_shop_info.ainvoke(tool_call)
-                    messages.append(tool_result)
-                elif tool_call["name"] == "get_production_bottlenecks":
-                    tool_result = await get_production_bottlenecks.ainvoke(tool_call)
-                    messages.append(tool_result)
-                elif tool_call["name"] == "get_delivery_delays":
-                    tool_result = await get_delivery_delays.ainvoke(tool_call)
-                    messages.append(tool_result)
+                t_name = tool_call["name"]
+                t_id = tool_call["id"]
+                
+                # Gọi tool tương ứng
+                if t_name == "get_efs_order_info":
+                    result = await get_efs_order_info.ainvoke(tool_call["args"])
+                elif t_name == "get_pending_orders":
+                    result = await get_pending_orders.ainvoke(tool_call["args"])
+                elif t_name == "search_shop_info":
+                    result = await search_shop_info.ainvoke(tool_call["args"])
+                elif t_name == "get_production_bottlenecks":
+                    result = await get_production_bottlenecks.ainvoke(tool_call["args"])
+                elif t_name == "get_delivery_delays":
+                    result = await get_delivery_delays.ainvoke(tool_call["args"])
+                else:
+                    result = f"Tool '{t_name}' không tồn tại."
+                
+                # Tạo ToolMessage để đưa kết quả lại cho LLM
+                messages.append(ToolMessage(
+                    content=str(result),
+                    tool_call_id=t_id
+                ))
                     
         return "Tôi xin lỗi, quá trình xử lý yêu cầu của bạn quá phức tạp và đã vượt quá giới hạn cho phép.", total_tokens

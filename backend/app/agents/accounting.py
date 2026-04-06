@@ -3,6 +3,7 @@ from .base import BaseSkill
 from ..db.mongodb import mongodb
 from ..services.attendance import attendance_service
 from langchain_core.messages import SystemMessage, HumanMessage
+from ..core.llm_manager import llm_manager
 import json
 
 class AccountingSkill(BaseSkill):
@@ -76,10 +77,18 @@ class AccountingSkill(BaseSkill):
         Hãy sử dụng CÔNG THỨC trong hướng dẫn và DỮ LIỆU phía trên để giải quyết, tính toán chi tiết và trả lời câu hỏi của khách hàng.
         """
 
+        # 1. Tải cấu hình LLM từ DB/Settings
+        keys = await self.get_provider_keys()
+        llm = llm_manager.get_chat_model(
+            model_name=keys.get("default_model"),
+            api_key=keys.get("model_api_key"),
+            api_base=keys.get("model_api_url")
+        )
+
         system_prompt = await self.get_system_prompt(user_role, username)
         msgs = [SystemMessage(content=system_prompt), HumanMessage(content=context)]
         
-        response = await self.llm.ainvoke(msgs)
+        response = await llm.ainvoke(msgs)
         usage = getattr(response, "usage_metadata", {})
         total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
         return response.content, total_tokens
