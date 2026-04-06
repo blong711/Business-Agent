@@ -8,6 +8,8 @@ export interface TranslationSchema {
   teleData: string;
   accHr: string;
   payroll: string;
+  marketingMgt: string;
+  creativeAsset: string;
   sysAdmin: string;
   accManagement: string;
   logout: string;
@@ -137,6 +139,68 @@ export interface TranslationSchema {
   ttsOff: string;
   ttsOn: string;
   loadingHistory: string;
+  agentSettings: string;
+  adminAgentSettingsTitle: string;
+  adminAgentSettingsSubtitle: string;
+  capability: string;
+  access: string;
+  everyone: string;
+  onlyAdmin: string;
+  agentCapabilities: string;
+  providerKeysTitle: string;
+  providerKeysSubtitle: string;
+  customCatKey: string;
+  pentifineKey: string;
+  merchizeKey: string;
+  keyPlaceholder: string;
+  updateSuccess: string;
+  agent_production: string;
+  agent_production_desc: string;
+  agent_cskh: string;
+  agent_cskh_desc: string;
+  agent_accounting: string;
+  agent_accounting_desc: string;
+  agent_marketing: string;
+  agent_marketing_desc: string;
+  cap_get_efs_order_info: string;
+  cap_get_efs_order_info_desc: string;
+  cap_get_pending_orders: string;
+  cap_get_pending_orders_desc: string;
+  cap_search_shop_info: string;
+  cap_search_shop_info_desc: string;
+  cap_get_production_bottlenecks: string;
+  cap_get_production_bottlenecks_desc: string;
+  cap_get_delivery_delays: string;
+  cap_get_delivery_delays_desc: string;
+  cap_get_provider_tracking: string;
+  cap_get_provider_tracking_desc: string;
+  cap_summarize_telegram: string;
+  cap_summarize_telegram_desc: string;
+  cap_analyze_sentiment: string;
+  cap_analyze_sentiment_desc: string;
+  cap_member_lookup: string;
+  cap_member_lookup_desc: string;
+  cap_calculate_payroll: string;
+  cap_calculate_payroll_desc: string;
+  cap_revenue_report: string;
+  cap_revenue_report_desc: string;
+  cap_attendance_tracking: string;
+  cap_attendance_tracking_desc: string;
+  cap_product_seo_title: string;
+  cap_product_seo_title_desc: string;
+  cap_product_description: string;
+  cap_product_description_desc: string;
+  cap_social_media_hooks: string;
+  cap_social_media_hooks_desc: string;
+  cap_ad_copy_gen: string;
+  cap_ad_copy_gen_desc: string;
+  adminMarketingTitle: string;
+  adminMarketingSubtitle: string;
+  nicheAnalysis: string;
+  contentLibrary: string;
+  trendingNiches: string;
+  growth: string;
+  copyContent: string;
 }
 
 export const translations: Record<Language, TranslationSchema> = {
@@ -149,6 +213,8 @@ export const translations: Record<Language, TranslationSchema> = {
     teleData: 'Dữ liệu Telegram',
     accHr: 'Kế toán & Nhân sự',
     payroll: 'Bảng lương nhân sự',
+    marketingMgt: 'Quản lý Marketing',
+    creativeAsset: 'Kho nội dung & Camp',
     sysAdmin: 'Quản trị Hệ thống',
     accManagement: 'Quản lý Tài khoản',
     logout: 'Đăng xuất hệ thống',
@@ -292,7 +358,69 @@ export const translations: Record<Language, TranslationSchema> = {
     welcomeBack: 'Chào mừng trở lại',
     getStarted: 'Bắt đầu ngay',
     noAccount: 'Chưa có tài khoản?',
-    hasAccount: 'Đã có tài khoản?'
+    hasAccount: 'Đã có tài khoản?',
+    agentSettings: 'Cấu hình Agent',
+    adminAgentSettingsTitle: 'Quản lý Kỹ năng Agent',
+    adminAgentSettingsSubtitle: 'CẤU HÌNH TÍNH NĂNG VÀ PHÂN QUYỀN SỬ DỤNG CHO TỪNG BOT',
+    capability: 'Kỹ năng / Công cụ',
+    access: 'Quyền truy cập',
+    everyone: 'Tất cả mọi người',
+    onlyAdmin: 'Chỉ Admin',
+    agentCapabilities: 'Danh sách kỹ năng',
+    providerKeysTitle: 'Cấu hình API Key Nhà in',
+    providerKeysSubtitle: 'QUẢN LÝ KHÓA TRUY CẬP TRỰC TIẾP CHO CÁC ĐƠN VỊ PRODUCTION',
+    customCatKey: 'CustomCat API Key',
+    pentifineKey: 'Pentifine API Key',
+    merchizeKey: 'Merchize API Key',
+    keyPlaceholder: 'Nhập API key mới hoặc để trống để giữ nguyên...',
+    updateSuccess: 'Cập nhật thành công!',
+    agent_production: 'Agent Sản xuất',
+    agent_production_desc: 'Chuyên gia điều phối sản xuất, tra cứu đơn hàng và xử lý vận đơn nhà in.',
+    agent_cskh: 'Agent CSKH',
+    agent_cskh_desc: 'Hỗ trợ giải đáp thắc mắc, kiểm tra trạng thái vận chuyển và thông tin khách hàng.',
+    agent_accounting: 'Agent Kế toán',
+    agent_accounting_desc: 'Quản lý bảng lương, đối soát tài chính và theo dõi chi phí vận hành.',
+    agent_marketing: 'Agent Marketing',
+    agent_marketing_desc: 'Chuyên gia sáng tạo nội dung, tối ưu tiêu đề SEO và nội dung quảng cáo đa kênh.',
+    cap_get_efs_order_info: 'Tra cứu đơn hàng EFS',
+    cap_get_efs_order_info_desc: 'Chiết xuất thông tin chi tiết về sản phẩm, trạng thái và lịch sử đơn hàng từ core EFS.',
+    cap_get_pending_orders: 'Lấy danh sách đơn Pending',
+    cap_get_pending_orders_desc: 'Liệt kê các đơn hàng đang chờ xử lý hoặc trong sản xuất theo trạng thái.',
+    cap_search_shop_info: 'Tìm kiếm thông tin Shop',
+    cap_search_shop_info_desc: 'Tra cứu chủ sở hữu, team quản lý và trạng thái hoạt động của các cửa hàng.',
+    cap_get_production_bottlenecks: 'Báo cáo đơn kẹt sản xuất',
+    cap_get_production_bottlenecks_desc: 'Tự động phát hiện các đơn hàng quá hạn mà chưa có thông tin vận đơn.',
+    cap_get_delivery_delays: 'Báo cáo đơn giao chậm',
+    cap_get_delivery_delays_desc: 'Theo dõi các đơn hàng đã ship nhưng quá lâu chưa cập nhật trạng thái Delivered.',
+    cap_get_provider_tracking: 'Tra cứu Tracking trực tiếp',
+    cap_get_provider_tracking_desc: 'Kết nối API trực tiếp với CustomCat, Merchize, Pentifine để lấy tracking gốc.',
+    cap_summarize_telegram: 'Tổng hợp tin nhắn Telegram',
+    cap_summarize_telegram_desc: 'Tóm tắt nội dung chat trong các nhóm kết nối giữa khách hàng và team vận hành.',
+    cap_analyze_sentiment: 'Phân tích thái độ khách hàng',
+    cap_analyze_sentiment_desc: 'Sử dụng AI để nhận diện cảm xúc (vui vẻ, giận dữ, khiếu nại) từ tin nhắn.',
+    cap_member_lookup: 'Tra cứu thành viên nhóm',
+    cap_member_lookup_desc: 'Lấy thông tin profile, username và lịch sử tham gia của khách hàng trên Telegram.',
+    cap_calculate_payroll: 'Tính lương & Phụ cấp',
+    cap_calculate_payroll_desc: 'Tự động tính toán lương thực lĩnh dựa trên ngày công, bảo hiểm và các khoản phụ cấp.',
+    cap_revenue_report: 'Báo cáo doanh thu & Chi phí',
+    cap_revenue_report_desc: 'Tổng hợp dòng tiền, lợi nhuận gộp và chi phí vận hành hệ thống theo kỳ báo cáo.',
+    cap_attendance_tracking: 'Quản lý chấm công',
+    cap_attendance_tracking_desc: 'Truy xuất dữ liệu check-in/out và tổng hợp ngày công thực tế của nhân viên.',
+    cap_product_seo_title: 'Tối ưu Tiêu đề SEO',
+    cap_product_seo_title_desc: 'Tự động tạo tiêu đề sản phẩm chuẩn SEO cho Etsy, Amazon, Shopify.',
+    cap_product_description: 'Viết mô tả sáng tạo',
+    cap_product_description_desc: 'Viết mô tả bán hàng thu hút theo phong cách storytelling hoặc benefit-driven.',
+    cap_social_media_hooks: 'Viral Content Hooks',
+    cap_social_media_hooks_desc: 'Tạo tiêu đề thu hút cho TikTok, Reels và bài đăng Facebook.',
+    cap_ad_copy_gen: 'Nội dung quảng cáo PR',
+    cap_ad_copy_gen_desc: 'Viết nội dung chạy quảng cáo Facebook/Google chuẩn marketing.',
+    adminMarketingTitle: 'Marketing Hub',
+    adminMarketingSubtitle: 'TỔNG HỢP CHIẾN DỊCH, NỘI DUNG SÁNG TẠO VÀ XU HƯỚNG THỊ TRƯỜNG',
+    nicheAnalysis: 'Phân tích Niche',
+    contentLibrary: 'Kho nội dung sáng tạo',
+    trendingNiches: 'Niche đang thịnh hành',
+    growth: 'Tăng trưởng',
+    copyContent: 'Sao chép nội dung'
   },
   en: {
     // Sidebar & Navigation
@@ -303,6 +431,8 @@ export const translations: Record<Language, TranslationSchema> = {
     teleData: 'Telegram Analytics',
     accHr: 'HR & Accounting',
     payroll: 'Staff Payroll',
+    marketingMgt: 'Marketing Mgt',
+    creativeAsset: 'Creative Assets',
     sysAdmin: 'System Admin',
     accManagement: 'Account Control',
     logout: 'Sign Out System',
@@ -449,6 +579,68 @@ export const translations: Record<Language, TranslationSchema> = {
     updateError: 'Update failed!',
     loadHistoryError: 'Failed to load chat history.',
     updateProdError: 'Production update failed!',
-    connError: 'Lost connection to production server (EFS Node 1).'
+    connError: 'Lost connection to production server (EFS Node 1).',
+    agentSettings: 'Agent Settings',
+    adminAgentSettingsTitle: 'Agent Skills Management',
+    adminAgentSettingsSubtitle: 'CONFIGURE FEATURES AND ACCESS PERMISSIONS FOR EACH BOT',
+    capability: 'Skill / Tool',
+    access: 'Access Permission',
+    everyone: 'Everyone',
+    onlyAdmin: 'Admin Only',
+    agentCapabilities: 'Skills List',
+    providerKeysTitle: 'Provider API Keys Config',
+    providerKeysSubtitle: 'MANAGE DIRECT ACCESS KEYS FOR PRODUCTION PARTNER',
+    customCatKey: 'CustomCat API Key',
+    pentifineKey: 'Pentifine API Key',
+    merchizeKey: 'Merchize API Key',
+    keyPlaceholder: 'Enter new API key or leave blank to keep current...',
+    updateSuccess: 'Updated successfully!',
+    agent_production: 'Production Agent',
+    agent_production_desc: 'Production coordinator, order lookup and provider tracking specialist.',
+    agent_cskh: 'CSKH Agent',
+    agent_cskh_desc: 'Handles customer inquiries, shipping status checks and member info.',
+    agent_accounting: 'Accounting Agent',
+    agent_accounting_desc: 'Manages payroll, financial reconciliation and operational costs.',
+    agent_marketing: 'Marketing Agent',
+    agent_marketing_desc: 'Content creation specialist, SEO title optimization and multi-channel ad copy.',
+    cap_get_efs_order_info: 'EFS Order Lookup',
+    cap_get_efs_order_info_desc: 'Extracts detailed product, status and history from EFS core.',
+    cap_get_pending_orders: 'List Pending Orders',
+    cap_get_pending_orders_desc: 'Lists orders waiting for processing or in production by status.',
+    cap_search_shop_info: 'Shop Search',
+    cap_search_shop_info_desc: 'Finds owners, management teams and operational status of shops.',
+    cap_get_production_bottlenecks: 'Production Bottlenecks Report',
+    cap_get_production_bottlenecks_desc: 'Detects overdue orders without tracking information.',
+    cap_get_delivery_delays: 'Delivery Delays Report',
+    cap_get_delivery_delays_desc: 'Monitors shipped orders that are taking too long to be delivered.',
+    cap_get_provider_tracking: 'Direct Provider Tracking',
+    cap_get_provider_tracking_desc: 'Connects directly to CustomCat, Merchize, Pentifine APIs for original tracking.',
+    cap_summarize_telegram: 'Telegram Message Summary',
+    cap_summarize_telegram_desc: 'Summarizes chat content in groups between customers and operations team.',
+    cap_analyze_sentiment: 'Customer Sentiment Analysis',
+    cap_analyze_sentiment_desc: 'Uses AI to detect emotions (happy, angry, complaints) from messages.',
+    cap_member_lookup: 'Member Lookup',
+    cap_member_lookup_desc: 'Retrieves profile info, username and participation history on Telegram.',
+    cap_calculate_payroll: 'Payroll & Allowance Calculation',
+    cap_calculate_payroll_desc: 'Automatically calculates net pay based on field days, insurance and allowances.',
+    cap_revenue_report: 'Revenue & Cost Report',
+    cap_revenue_report_desc: 'Summarizes cash flow, gross profit and operational costs for reporting periods.',
+    cap_attendance_tracking: 'Attendance Tracking',
+    cap_attendance_tracking_desc: 'Retrieves check-in/out data and summarizes actual working days for employees.',
+    cap_product_seo_title: 'SEO Title Optimization',
+    cap_product_seo_title_desc: 'Generates SEO-friendly product titles for Etsy, Amazon, and Shopify.',
+    cap_product_description: 'Creative Description',
+    cap_product_description_desc: 'Writes engaging product descriptions focusing on benefits and storytelling.',
+    cap_social_media_hooks: 'Viral Content Hooks',
+    cap_social_media_hooks_desc: 'Creates catchy hooks for TikTok, Reels, and Facebook posts.',
+    cap_ad_copy_gen: 'Ad Copy Generation',
+    cap_ad_copy_gen_desc: 'Writes marketing ad copies for Facebook and Google Ads campaigns.',
+    adminMarketingTitle: 'Marketing Hub',
+    adminMarketingSubtitle: 'CAMPAIGN FEED, CREATIVE ASSETS AND MARKET TRENDS',
+    nicheAnalysis: 'Niche Analysis',
+    contentLibrary: 'Content Library',
+    trendingNiches: 'Trending Niches',
+    growth: 'Growth',
+    copyContent: 'Copy content'
   }
 };

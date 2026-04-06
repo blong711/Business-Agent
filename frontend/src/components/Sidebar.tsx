@@ -1,12 +1,12 @@
 import React from 'react';
-import { Bot, MessageSquare, Users, Package } from 'lucide-react';
+import { Bot, MessageSquare, Users, Package, Target } from 'lucide-react';
 import { translations, Language } from '../i18n';
 
 interface SidebarProps {
   currentUser: string;
   currentUserRole: string;
-  viewMode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile';
-  setViewMode: (mode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile') => void;
+  viewMode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing';
+  setViewMode: (mode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing') => void;
   fetchUsers: () => void;
   fetchTelegramGroups: () => void;
   fetchEmployees: () => void;
@@ -52,6 +52,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>{t.teleData}</span>
           </div>
 
+          <p className="nav-section-title">{t.marketingMgt}</p>
+          <div 
+            className={`nav-item ${viewMode === 'marketing' ? 'active' : ''}`} 
+            onClick={() => setViewMode('marketing')}
+          >
+            <Target size={18} />
+            <span>{t.creativeAsset}</span>
+          </div>
+
           <p className="nav-section-title">{t.accHr}</p>
           <div 
             className={`nav-item ${viewMode === 'employees' ? 'active' : ''}`} 
@@ -68,6 +77,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Users size={18} />
             <span>{t.accManagement}</span>
+          </div>
+
+          <div 
+            className={`nav-item ${viewMode === 'agent_settings' ? 'active' : ''}`} 
+            onClick={() => setViewMode('agent_settings')}
+          >
+            <Bot size={18} />
+            <span>{t.agentSettings}</span>
           </div>
         </>
       )}

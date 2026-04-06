@@ -1,3 +1,4 @@
+from typing import List
 from .base import BaseSkill
 from ..db.mongodb import mongodb
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -9,6 +10,13 @@ class CSKHSkill(BaseSkill):
             name="Chăm sóc Khách hàng",
             description="Giải quyết khiếu nại, hỗ trợ đơn hàng, xem thông tin nhóm và tin nhắn khách hàng."
         )
+
+    async def get_capabilities(self) -> List[dict]:
+        return [
+            {"id": "summarize_telegram", "name": "Tổng hợp tin nhắn Telegram", "desc": "Tóm tắt nội dung chat trong các nhóm kết nối."},
+            {"id": "analyze_sentiment", "name": "Phân tích thái độ khách hàng", "desc": "Nhận diện khách hàng đang nóng giận hoặc hài lòng."},
+            {"id": "member_lookup", "name": "Tra cứu thành viên nhóm", "desc": "Lấy thông tin profile Telegram của khách hàng."}
+        ]
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         return f"""

@@ -1,15 +1,27 @@
 import os
 import time
+from typing import List, Optional
 from .base import BaseSkill
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import tool
 import httpx
 import json
 from ..core.config import settings
+from ..db.mongodb import mongodb
 
 # Simple TTL Cache for order info (5 minutes)
 order_cache = {}
 CACHE_TTL = 300  # 5 mins
+
+async def get_db_provider_keys() -> dict:
+    """Helper để lấy API Key từ MongoDB, fallback về settings."""
+    doc = await mongodb.db.system_settings.find_one({"key": "provider_keys"})
+    db_keys = doc.get("value", {}) if doc else {}
+    return {
+        "customcat": db_keys.get("customcat_key") or settings.CUSTOMCAT_API_KEY,
+        "pentifine": db_keys.get("pentifine_key") or settings.PENTIFINE_API_KEY,
+        "merchize": db_keys.get("merchize_key") or settings.MERCHIZE_API_KEY
+    }
 
 @tool
 async def get_efs_order_info(order_id: str) -> str:
@@ -278,7 +290,8 @@ async def get_provider_tracking(print_provider: str, reference_id: str, external
     # 1. Cấu hình đặc thù cho CUSTOMCAT
     if "CUSTOMCAT" in provider_key:
         if not reference_id: return "CustomCat yêu cầu reference_id."
-        api_key = settings.CUSTOMCAT_API_KEY
+        keys = await get_db_provider_keys()
+        api_key = keys.get("customcat")
         if not api_key: return "Lỗi: Chưa cấu hình CUSTOMCAT_API_KEY trong hệ thống."
         
         base_url = "https://customcat-beta.mylocker.net"
@@ -344,7 +357,8 @@ async def get_provider_tracking(print_provider: str, reference_id: str, external
         target_id = external_id or reference_id
         if not target_id: return "Pentifine yêu cầu marketplace_order_id làm external_id."
         
-        api_key = settings.PENTIFINE_API_KEY
+        keys = await get_db_provider_keys()
+        api_key = keys.get("pentifine")
         if not api_key: return "Lỗi: Chưa cấu hình PENTIFINE_API_KEY trong hệ thống (kiểm tra file .env)."
         
         base_url = "https://app.pentifine.com"
@@ -381,7 +395,8 @@ async def get_provider_tracking(print_provider: str, reference_id: str, external
     if "MERCHIZE" in provider_key:
         if not reference_id: return "Merchize yêu cầu reference_order_id."
         
-        api_key = settings.MERCHIZE_API_KEY
+        keys = await get_db_provider_keys()
+        api_key = keys.get("merchize")
         if not api_key: return "Lỗi: Chưa cấu hình MERCHIZE_API_KEY trong hệ thống."
         
         # Base URL do user cung cấp (ví dụ: b82273a6...bo-api)
@@ -444,6 +459,16 @@ class ProductionSkill(BaseSkill):
             name="Sản xuất & Vận hành",
             description="Theo dõi lịch sản xuất, kiểm soát tồn kho và theo dõi tiến độ đơn hàng (bao gồm tra cứu tracking từ nhà in)."
         )
+
+    async def get_capabilities(self) -> List[dict]:
+        return [
+            {"id": "get_efs_order_info", "name": "Tra cứu chi tiết đơn hàng", "desc": "Lấy thông tin súc tích từ EFS API."},
+            {"id": "get_pending_orders", "name": "Thống kê đơn theo trạng thái", "desc": "Đếm và liệt kê các đơn: pending, in_production, on_hold, v.v."},
+            {"id": "search_shop_info", "name": "Tra cứu thông tin Shop", "desc": "Tìm kiếm chủ sở hữu và team quản lý của một cửa hàng."},
+            {"id": "get_production_bottlenecks", "name": "Cảnh báo đơn kẹt sản xuất", "desc": "Tìm các đơn chưa có tracking sau 7 ngày."},
+            {"id": "get_delivery_delays", "name": "Cảnh báo đơn giao chậm", "desc": "Tìm các đơn ship lâu nhưng chưa delivered."},
+            {"id": "get_provider_tracking", "name": "Tra cứu Tracking nhà in", "desc": "Gọi API trực tiếp nhà in (Pentifine, Merchize, CustomCat)."}
+        ]
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         # Lấy bảng thời gian sản xuất từ DB
@@ -511,7 +536,8 @@ class ProductionSkill(BaseSkill):
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_input)]
         
         # Cung cấp các tools cho Agent
-        tools = [get_efs_order_info, get_provider_tracking, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
+        all_tools = [get_efs_order_info, get_provider_tracking, get_pending_orders, search_shop_info, get_production_bottlenecks, get_delivery_delays]
+        tools = await self.filter_tools_by_permissions("production", all_tools, user_role)
         llm_with_tools = self.llm.bind_tools(tools)
         
         total_tokens = 0

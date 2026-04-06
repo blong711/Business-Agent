@@ -6,6 +6,7 @@ from ..core.llm_manager import llm_manager
 from .cskh import CSKHSkill
 from .accounting import AccountingSkill
 from .production import ProductionSkill
+from .marketing import MarketingSkill
 
 class Orchestrator:
     """
@@ -16,7 +17,8 @@ class Orchestrator:
         self.skills = {
             "cskh": CSKHSkill(),
             "accounting": AccountingSkill(),
-            "production": ProductionSkill()
+            "production": ProductionSkill(),
+            "marketing": MarketingSkill()
         }
         self.classifier_llm = llm_manager.get_chat_model()
 
@@ -41,7 +43,11 @@ class Orchestrator:
         if any(kw in user_input_lower for kw in ["tin nhắn", "telegram", "khách hàng", "mắng", "chửi", "hỗ trợ"]):
             return "cskh", 0
 
-        # 5. Check for Greetings
+        # 5. Check for Marketing keywords
+        if any(kw in user_input_lower for kw in ["viết content", "đặt tiêu đề", "mô tả sản phẩm", "marketing", "content", "bài đăng", "ad copy", "tiktok", "reels"]):
+            return "marketing", 0
+
+        # 6. Check for Greetings
         if user_input_lower in ["chào", "hi", "hello", "xin chào", "hey"]:
             return "general", 0
 
@@ -50,7 +56,8 @@ class Orchestrator:
         Nhiệm vụ của bạn là phân loại một yêu cầu của khách hàng vào một trong các bộ phận sau:
         - 'cskh': Nếu hỏi về hỗ trợ, khiếu nại, thông tin sản phẩm, HOẶC tóm tắt/phân tích tin nhắn Telegram.
         - 'accounting': Nếu hỏi về tiền bạc, doanh thu, hóa đơn, bảng lương.
-        - 'production': Nếu hỏi về sản xuất, đơn hàng, tracking, HOẶC tra cứu thông tin shop/cửa hàng (vd: shop Taylor của ai).
+        - 'production': Nếu hỏi về sản xuất, đơn hàng, tracking, HOẶC tra cứu thông tin shop/cửa hàng.
+        - 'marketing': Nếu yêu cầu viết content, title sản phẩm, mô tả bán hàng, nội dung quảng cáo.
         - 'general': Nếu chỉ là chào hỏi hoặc nội dung khác.
 
         Chỉ trả về DUY NHẤT một từ khóa trong danh sách trên (cskh, accounting, production, general).
@@ -64,7 +71,7 @@ class Orchestrator:
         total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
         
         # Fallback nếu AI trả lời dài dòng
-        for key in ["cskh", "accounting", "production", "general"]:
+        for key in ["cskh", "accounting", "production", "marketing", "general"]:
             if key in intent:
                 return key, total_tokens
         return "general", total_tokens

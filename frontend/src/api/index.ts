@@ -116,5 +116,43 @@ export const apiService = {
     });
     if (!res.ok) throw new Error('Failed to update production time');
     return res.json();
+  },
+  
+  fetchAgents: async () => {
+    const res = await fetch(`${BASE_URL}/agents`);
+    if (!res.ok) throw new Error('Failed to fetch agents');
+    return res.json();
+  },
+
+  updateAgentCapability: async (agentId: string, capId: string, roles: string[]) => {
+    const res = await fetch(`${BASE_URL}/agents/${agentId}/capabilities/${capId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roles })
+    });
+    if (!res.ok) throw new Error('Failed to update agent capability');
+    return res.json();
+  },
+  
+  fetchProviderKeys: async () => {
+    const res = await fetch(`${BASE_URL}/settings/provider-keys`);
+    if (!res.ok) throw new Error('Failed to fetch provider keys');
+    return res.json();
+  },
+
+  updateProviderKeys: async (keys: any) => {
+    const res = await fetch(`${BASE_URL}/settings/provider-keys`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(keys)
+    });
+    if (!res.ok) throw new Error('Failed to update provider keys');
+    return res.json();
+  },
+
+  fetchMarketingData: async () => {
+    const res = await fetch(`${BASE_URL}/marketing/contents`);
+    if (!res.ok) throw new Error('Failed to fetch marketing data');
+    return res.json();
   }
 };

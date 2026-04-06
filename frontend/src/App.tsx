@@ -10,6 +10,9 @@ import { AdminEmployees } from './components/AdminEmployees';
 import AdminProductionTimes from './components/AdminProductionTimes';
 import { UserProfile } from './components/UserProfile';
 import { TopBar } from './components/TopBar';
+import { AdminAgentSettings } from './components/AdminAgentSettings';
+import { AdminMarketing } from './components/AdminMarketing';
+import { Settings, Target } from 'lucide-react';
 
 import { apiService } from './api';
 import { Message, UserItem, TelegramGroup, TelegramMember } from './types';
@@ -18,7 +21,7 @@ import { translations, Language } from './i18n';
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('user');
-  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile'>('chat');
+  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing'>('chat');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   
@@ -89,7 +92,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname.replace('/', '');
-      if (['chat', 'users', 'telegram', 'employees', 'production', 'profile'].includes(path)) {
+      if (['chat', 'users', 'telegram', 'employees', 'production', 'profile', 'agent_settings', 'marketing'].includes(path)) {
         setViewMode(path as any);
       } else if (path === '') {
         setViewMode('chat');
@@ -197,7 +200,9 @@ const App: React.FC = () => {
       telegram: t.teleData,
       employees: t.adminEmpTitle,
       production: t.prodTime,
-      profile: t.profile
+      profile: t.profile,
+      agent_settings: t.agentSettings,
+      marketing: t.marketingMgt
     };
     return viewTitleMap[viewMode] || 'Nexus';
   };
@@ -385,6 +390,14 @@ const App: React.FC = () => {
 
           {viewMode === 'production' && (
             <AdminProductionTimes lang={lang} />
+          )}
+
+          {viewMode === 'agent_settings' && (
+            <AdminAgentSettings lang={lang} />
+          )}
+
+          {viewMode === 'marketing' && (
+            <AdminMarketing lang={lang} />
           )}
 
           {viewMode === 'profile' && (

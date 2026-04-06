@@ -88,8 +88,18 @@ export const AdminTelegram: React.FC<AdminTelegramProps> = ({
       </div>
 
       {selectedGroup && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-card slide-up" style={{ maxWidth: '800px', width: '90%' }}>
+        <div className="modal-overlay" onClick={onBack}>
+          <div 
+            className="modal-content slide-up" 
+            style={{ 
+              maxWidth: '800px', 
+              width: '90%', 
+              background: '#0f1118', 
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 style={{ margin: 0 }}>{t.membersOf} <span className="highlight-text">{selectedGroup.title || 'Private Chat'}</span></h3>
               <button className="icon-btn" onClick={onBack} title={t.back}>

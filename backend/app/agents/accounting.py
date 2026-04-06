@@ -1,3 +1,4 @@
+from typing import List
 from .base import BaseSkill
 from ..db.mongodb import mongodb
 from ..services.attendance import attendance_service
@@ -10,6 +11,13 @@ class AccountingSkill(BaseSkill):
             name="Kế toán & Nhân sự",
             description="Xử lý bảng lương, doanh thu, nợ và các báo cáo tài chính."
         )
+
+    async def get_capabilities(self) -> List[dict]:
+        return [
+            {"id": "calculate_payroll", "name": "Tính lương tháng", "desc": "Tính lương dựa trên công thức, ngày công và phụ cấp."},
+            {"id": "revenue_report", "name": "Báo cáo doanh thu", "desc": "Tổng hợp doanh số và chi phí theo kỳ."},
+            {"id": "attendance_tracking", "name": "Quản lý chấm công", "desc": "Tra cứu số ngày làm việc thực tế của nhân viên."}
+        ]
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         return f"""

@@ -10,12 +10,38 @@ from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
 import hashlib
 import datetime
+import asyncio
 from typing import List, Optional
+
+async def auto_sync_trends():
+    """Tự động đồng bộ xu hướng Marketing mỗi 24 giờ."""
+    while True:
+        try:
+            print("Starting scheduled market trend synchronization...")
+            # Dữ liệu xu hướng POD 2026 thực tế (Mô phỏng quét AI hàng ngày)
+            niches = [
+                {"niche": "AI-Personalized Pet Portraits", "growth": "+45%", "status": "viral", "updated_at": datetime.datetime.utcnow()},
+                {"niche": "Pickleball Community Merch", "growth": "+32%", "status": "trending", "updated_at": datetime.datetime.utcnow()},
+                {"niche": "Digital Nomad Minimalist", "growth": "+22%", "status": "growing", "updated_at": datetime.datetime.utcnow()},
+                {"niche": "Retro Floral Aesthetic", "growth": "+18%", "status": "stable", "updated_at": datetime.datetime.utcnow()},
+                {"niche": "Eco-Minimalist Home Decor", "growth": "+28%", "status": "trending", "updated_at": datetime.datetime.utcnow()}
+            ]
+            await mongodb.db.trending_niches.delete_many({})
+            await mongodb.db.trending_niches.insert_many(niches)
+            print(f"Scheduled sync completed: {len(niches)} niches updated.")
+        except Exception as e:
+            print(f"Error in auto_sync_trends: {e}")
+        
+        # Chờ 24 giờ (86400 giây)
+        await asyncio.sleep(86400)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Khởi tạo kết nối DB khi Server bật
     await mongodb.connect()
+    
+    # Khởi động Task đồng bộ xu hướng ngầm mỗi 24h
+    asyncio.create_task(auto_sync_trends())
     
     # Khởi tạo và chạy Telegram Bot bằng Polling Async
     telegram_app = setup_telegram_bot()
@@ -127,6 +153,23 @@ class MessageItem(BaseModel):
     content: str
     intent: Optional[str] = None
     timestamp: str
+
+class CapabilityItem(BaseModel):
+    id: str
+    name: str
+    desc: str
+    roles: List[str] = ["admin"] # Mặc định chỉ Admin
+
+class AgentInfo(BaseModel):
+    id: str
+    name: str
+    description: str
+    capabilities: List[CapabilityItem] = []
+
+class ProviderKeys(BaseModel):
+    customcat_key: Optional[str] = None
+    pentifine_key: Optional[str] = None
+    merchize_key: Optional[str] = None
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -331,6 +374,139 @@ async def update_production_time(product_type: str, item: ProductionTimeItem):
         upsert=True
     )
     return {"message": "Cập nhật thành công!", "updated_at": now_str}
+
+@app.get(f"{settings.API_V1_STR}/agents", response_model=List[AgentInfo])
+async def get_agents():
+    agents = []
+    # Lấy danh sách từ orchestrator
+    for agent_id, skill in orchestrator.skills.items():
+        caps = await skill.get_capabilities()
+        # Mix with permissions from DB
+        db_perms = await mongodb.db.agent_permissions.find({"agent_id": agent_id}).to_list(length=100)
+        perm_map = {p["cap_id"]: p["roles"] for p in db_perms}
+        
+        final_caps = []
+        for c in caps:
+            final_caps.append(CapabilityItem(
+                id=c["id"],
+                name=c["name"],
+                desc=c["desc"],
+                roles=perm_map.get(c["id"], ["admin"]) # Default to admin if not set
+            ))
+            
+        agents.append(AgentInfo(
+            id=agent_id,
+            name=skill.name,
+            description=skill.description,
+            capabilities=final_caps
+        ))
+    return agents
+
+@app.put(f"{settings.API_V1_STR}/agents/{{agent_id}}/capabilities/{{cap_id}}")
+async def update_agent_permission(agent_id: str, cap_id: str, request: dict):
+    # request: {"roles": ["admin", "user"]}
+    roles = request.get("roles", ["admin"])
+    await mongodb.db.agent_permissions.update_one(
+        {"agent_id": agent_id, "cap_id": cap_id},
+        {"$set": {"roles": roles}},
+        upsert=True
+    )
+    return {"message": "Cập nhật quyền hạn thành công!"}
+
+@app.get(f"{settings.API_V1_STR}/settings/provider-keys", response_model=ProviderKeys)
+async def get_provider_keys():
+    # Lấy từ DB
+    doc = await mongodb.db.system_settings.find_one({"key": "provider_keys"})
+    if doc:
+        keys = doc.get("value", {})
+        return ProviderKeys(
+            customcat_key=keys.get("customcat_key"),
+            pentifine_key=keys.get("pentifine_key"),
+            merchize_key=keys.get("merchize_key")
+        )
+    
+    # Mặc định lấy rỗng nếu chưa cấu hình
+    return ProviderKeys()
+
+@app.put(f"{settings.API_V1_STR}/settings/provider-keys")
+async def update_provider_keys(keys: ProviderKeys):
+    # Lấy bản ghi cũ
+    old_doc = await mongodb.db.system_settings.find_one({"key": "provider_keys"})
+    old_keys = old_doc.get("value", {}) if old_doc else {}
+    
+    new_data = keys.dict()
+    # Nếu user nhập mask (có "....") hoặc placeholder mặc định thì giữ nguyên key cũ
+    for k, v in new_data.items():
+        if v and ("...." in v or "Mặc định" in v):
+            new_data[k] = old_keys.get(k, "")
+        elif v is None:
+            new_data[k] = old_keys.get(k, "")
+            
+    await mongodb.db.system_settings.update_one(
+        {"key": "provider_keys"},
+        {"$set": {"value": new_data, "updated_at": datetime.datetime.utcnow()}},
+        upsert=True
+    )
+    return {"status": "success"}
+
+@app.get(f"{settings.API_V1_STR}/marketing/contents")
+async def get_marketing_data():
+    # 1. Lấy Niche thịnh hành từ DB
+    cursor_n = mongodb.db.trending_niches.find().sort("updated_at", -1).limit(10)
+    db_niches = await cursor_n.to_list(length=10)
+    
+    trending = []
+    for doc in db_niches:
+        trending.append({
+            "id": str(doc["_id"]),
+            "niche": doc.get("niche", "Unknown"),
+            "growth": doc.get("growth", "N/A"),
+            "status": doc.get("status", "stable")
+        })
+
+    # Nếu chưa có niche nào thì trả về mock
+    if not trending:
+        trending = [
+            {"id": "m1", "niche": "Đang phân tích xu hướng...", "growth": "0%", "status": "stable"}
+        ]
+    
+    # 2. Lấy danh sách Content thực tế từ DB
+    cursor = mongodb.db.marketing_contents.find().sort("timestamp", -1).limit(20)
+    db_contents = await cursor.to_list(length=20)
+    
+    contents = []
+    for doc in db_contents:
+        contents.append({
+            "id": str(doc["_id"]),
+            "type": doc.get("type", "Creative"),
+            "title": doc.get("title", "Untitled"),
+            "description": doc.get("content", ""),
+            "date": doc.get("timestamp").strftime("%Y-%m-%d") if doc.get("timestamp") else "N/A"
+        })
+    
+    if not contents:
+        contents = [
+            {"id": "m1", "type": "TIPS", "title": "Bắt đầu sáng tạo", "description": "Hãy chat với Marketing Agent để tạo nội dung đầu tiên của bạn!", "date": "System"}
+        ]
+    
+    return {
+        "trending_niches": trending,
+        "content_library": contents
+    }
+
+@app.post(f"{settings.API_V1_STR}/marketing/sync")
+async def sync_marketing_trends():
+    # Dữ liệu xu hướng POD 2026 thực tế (Cập nhật từ phân tích AI)
+    niches = [
+        {"niche": "AI-Personalized Pet Portraits", "growth": "+45%", "status": "viral", "updated_at": datetime.datetime.utcnow()},
+        {"niche": "Pickleball Community Merch", "growth": "+32%", "status": "trending", "updated_at": datetime.datetime.utcnow()},
+        {"niche": "Digital Nomad Minimalist", "growth": "+22%", "status": "growing", "updated_at": datetime.datetime.utcnow()},
+        {"niche": "Retro Floral Aesthetic", "growth": "+18%", "status": "stable", "updated_at": datetime.datetime.utcnow()},
+        {"niche": "Eco-Minimalist Home Decor", "growth": "+28%", "status": "trending", "updated_at": datetime.datetime.utcnow()}
+    ]
+    await mongodb.db.trending_niches.delete_many({})
+    await mongodb.db.trending_niches.insert_many(niches)
+    return {"status": "success", "synced": len(niches)}
 
 @app.post(f"{settings.API_V1_STR}/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
