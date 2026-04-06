@@ -16,6 +16,7 @@ async def seed_data():
     await db.employees.delete_many({})
     await db.attendance.delete_many({})
     await db.users.delete_many({})
+    await db.production_times.delete_many({})
 
     products = [
         {"id": "SP001", "name": "Laptop Thinkpad T14", "price": 25000000, "stock": 10},
@@ -46,11 +47,19 @@ async def seed_data():
         {"emp_id": "NV01", "month": "2024-05", "work_days": 21, "allowance": 1000000, "deduction": 0},
     ]
 
+    production_times = [
+        {"product_type": "Mug/Ceramic", "min_days": 2, "max_days": 3},
+        {"product_type": "T-shirt/Sweatshirt/Hoodie", "min_days": 3, "max_days": 5},
+        {"product_type": "Poster/Canvas", "min_days": 3, "max_days": 4},
+        {"product_type": "Ornament", "min_days": 2, "max_days": 4},
+    ]
+
     await db.products.insert_many(products)
     await db.orders.insert_many(orders)
     await db.accounting.insert_many(accounting)
     await db.employees.insert_many(employees)
     await db.attendance.insert_many(attendance)
+    await db.production_times.insert_many(production_times)
 
     import hashlib
     def hash_password(password: str) -> str:

@@ -6,14 +6,21 @@ import { Sidebar } from './components/Sidebar';
 import { ChatView } from './components/ChatView';
 import { AdminUsers } from './components/AdminUsers';
 import { AdminTelegram } from './components/AdminTelegram';
+import { AdminEmployees } from './components/AdminEmployees';
+import AdminProductionTimes from './components/AdminProductionTimes';
+import { UserProfile } from './components/UserProfile';
+import { TopBar } from './components/TopBar';
 
 import { apiService } from './api';
 import { Message, UserItem, TelegramGroup, TelegramMember } from './types';
+import { translations, Language } from './i18n';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('user');
-  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram'>('chat');
+  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile'>('chat');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [lang, setLang] = useState<'vi' | 'en'>('vi');
   
   const [authError, setAuthError] = useState('');
   const [linkMessage, setLinkMessage] = useState('');
@@ -28,6 +35,7 @@ const App: React.FC = () => {
   const [telegramGroups, setTelegramGroups] = useState<TelegramGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<TelegramGroup | null>(null);
   const [telegramMembers, setTelegramMembers] = useState<TelegramMember[]>([]);
+  const [employeeList, setEmployeeList] = useState<any[]>([]);
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
 
   // Background animation elements could be placed here if needed
@@ -73,10 +81,43 @@ const App: React.FC = () => {
     }
   };
 
+  // Sync with Path on Load & Popstate
   useEffect(() => {
-    // Load auth from localStorage on mount
+    const handlePopState = () => {
+      const path = window.location.pathname.replace('/', '');
+      if (['chat', 'users', 'telegram', 'employees', 'production', 'profile'].includes(path)) {
+        setViewMode(path as any);
+      } else if (path === '') {
+        setViewMode('chat');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    handlePopState(); // Initial check
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update URL path when viewMode changes
+  useEffect(() => {
+    if (currentUser) {
+      const currentPath = window.location.pathname.replace('/', '');
+      if (currentPath !== viewMode && !(currentPath === '' && viewMode === 'chat')) {
+        const newPath = viewMode === 'chat' ? '/' : `/${viewMode}`;
+        window.history.pushState({}, '', newPath);
+      }
+    }
+  }, [viewMode, currentUser]);
+
+  useEffect(() => {
     const savedUser = localStorage.getItem('ai_agent_user');
     const savedRole = localStorage.getItem('ai_agent_role');
+    const savedTheme = localStorage.getItem('ai_agent_theme') as 'dark' | 'light';
+    const savedLang = localStorage.getItem('ai_agent_lang') as 'vi' | 'en';
+    
+    if (savedTheme) setTheme(savedTheme);
+    if (savedLang) setLang(savedLang);
+
     if (savedUser && savedRole) {
       setCurrentUser(savedUser);
       setCurrentUserRole(savedRole);
@@ -118,6 +159,8 @@ const App: React.FC = () => {
 
       setViewMode('chat');
       loadHistory(data.username);
+      setViewMode('chat');
+      loadHistory(data.username);
     } catch (err: any) {
       setAuthError(err.message || 'Lỗi kết nối Server! Backend đang đóng.');
     }
@@ -130,6 +173,36 @@ const App: React.FC = () => {
     setMessages([]);
     localStorage.removeItem('ai_agent_user');
     localStorage.removeItem('ai_agent_role');
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('ai_agent_theme', newTheme);
+  };
+
+  const toggleLang = () => {
+    const newLang = lang === 'vi' ? 'en' : 'vi';
+    setLang(newLang);
+    localStorage.setItem('ai_agent_lang', newLang);
+  };
+
+  const getPageTitle = () => {
+    const t = translations[lang];
+    const viewTitleMap: Record<string, string> = {
+      chat: t.nexusChat,
+      users: t.adminUsersTitle,
+      telegram: t.teleData,
+      employees: t.adminEmpTitle,
+      production: t.prodTime,
+      profile: t.profile
+    };
+    return viewTitleMap[viewMode] || 'Nexus';
+  };
+
+  const appContainerStyle: React.CSSProperties = {
+    height: 'calc(100vh - 72px)',
+    marginTop: '72px'
   };
 
   const handleSendMessage = async (text: string) => {
@@ -202,26 +275,51 @@ const App: React.FC = () => {
     }
   };
 
+  const loadEmployees = async () => {
+    setIsLoadingAdmin(true);
+    try {
+      const data = await apiService.fetchEmployees();
+      setEmployeeList(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingAdmin(false);
+    }
+  };
+
   if (!currentUser) {
     return (
-      <div className="app-layout">
+      <div className="app-layout" data-theme={theme}>
         <div className="background-elements">
-          <div className="blob blob-1"></div>
-          <div className="blob blob-2"></div>
+          <div className="aura-blob aura-1"></div>
+          <div className="aura-blob aura-2"></div>
+          <div className="aura-blob aura-3"></div>
         </div>
-        <AuthView onAuth={handleAuth} authError={authError} />
+        <AuthView onAuth={handleAuth} authError={authError} theme={theme} toggleTheme={toggleTheme} lang={lang} />
       </div>
     );
   }
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-theme={theme}>
       <div className="background-elements">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
+        <div className="aura-blob aura-1"></div>
+        <div className="aura-blob aura-2"></div>
+        <div className="aura-blob aura-3"></div>
       </div>
       
-      <div className="app-container slide-right">
+      <TopBar 
+        title={getPageTitle()} 
+        theme={theme} 
+        toggleTheme={toggleTheme} 
+        lang={lang} 
+        toggleLang={toggleLang}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onNavigateProfile={() => setViewMode('profile')}
+      />
+
+      <div className="app-container slide-right" style={appContainerStyle}>
         <Sidebar 
           currentUser={currentUser} 
           currentUserRole={currentUserRole}
@@ -230,9 +328,12 @@ const App: React.FC = () => {
           onLogout={handleLogout}
           fetchUsers={loadUsers}
           fetchTelegramGroups={loadTelegramGroups}
+          fetchEmployees={loadEmployees}
+          lang={lang}
         />
 
         <div className="main-wrapper">
+          
           {viewMode === 'chat' && (
             <>
               {linkMessage && (
@@ -249,12 +350,13 @@ const App: React.FC = () => {
                 onSendMessage={handleSendMessage}
                 input={input}
                 setInput={setInput}
+                lang={lang}
               />
             </>
           )}
 
           {viewMode === 'users' && (
-            <AdminUsers userList={userList} isLoading={isLoadingAdmin} />
+            <AdminUsers userList={userList} isLoading={isLoadingAdmin} onRefresh={loadUsers} lang={lang} />
           )}
 
           {viewMode === 'telegram' && (
@@ -265,7 +367,25 @@ const App: React.FC = () => {
               onSelectGroup={loadTelegramMembers}
               onBack={() => { setSelectedGroup(null); loadTelegramGroups(); }}
               isLoading={isLoadingAdmin}
+              lang={lang}
             />
+          )}
+
+          {viewMode === 'employees' && (
+            <AdminEmployees 
+              employees={employeeList} 
+              isLoading={isLoadingAdmin} 
+              onRefresh={loadEmployees} 
+              lang={lang}
+            />
+          )}
+
+          {viewMode === 'production' && (
+            <AdminProductionTimes lang={lang} />
+          )}
+
+          {viewMode === 'profile' && (
+            <UserProfile currentUser={currentUser} role={currentUserRole} lang={lang} />
           )}
         </div>
       </div>

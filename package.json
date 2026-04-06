@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "antigravity-awesome-skills": "^9.5.1"
+  },
+  "scripts": {
+    "awesome-skills": "antigravity-awesome-skills"
+  }
+}

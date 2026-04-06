@@ -1,14 +1,16 @@
 import React from 'react';
-import { Bot, MessageSquare, Users, LogOut } from 'lucide-react';
+import { Bot, MessageSquare, Users, Package } from 'lucide-react';
+import { translations, Language } from '../i18n';
 
 interface SidebarProps {
   currentUser: string;
   currentUserRole: string;
-  viewMode: 'chat' | 'users' | 'telegram';
-  setViewMode: (mode: 'chat' | 'users' | 'telegram') => void;
-  onLogout: () => void;
+  viewMode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile';
+  setViewMode: (mode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile') => void;
   fetchUsers: () => void;
   fetchTelegramGroups: () => void;
+  fetchEmployees: () => void;
+  lang: Language;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -16,51 +18,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUserRole, 
   viewMode, 
   setViewMode, 
-  onLogout,
   fetchUsers,
-  fetchTelegramGroups
+  fetchTelegramGroups,
+  fetchEmployees,
+  lang
 }) => {
+  const t = translations[lang];
+
   return (
     <div className="sidebar">
-      <div className="sidebar-header">
-        <div className="logo-box">
-          <Bot size={24} color="white" />
-        </div>
-        <h1 className="logo-text">AI Nexus</h1>
-      </div>
-
       <div className={`nav-item ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
         <MessageSquare size={18} />
-        <span>Hội thoại ({currentUser})</span>
+        <span>{t.nexusChat} ({currentUser})</span>
       </div>
 
       {currentUserRole === 'admin' && (
         <>
-          <div className="spacer" style={{flex: 0}}></div>
-          <p className="nav-section-title">System Admin</p>
+          <p className="nav-section-title">{t.prodManagement}</p>
           <div 
-            className={`nav-item ${viewMode === 'users' ? 'active' : ''}`} 
-            onClick={() => { setViewMode('users'); fetchUsers(); }}
+            className={`nav-item ${viewMode === 'production' ? 'active' : ''}`} 
+            onClick={() => setViewMode('production')}
           >
-            <Users size={18} />
-            <span>Quản lý Tài khoản</span>
+            <Package size={18} />
+            <span>{t.prodTime}</span>
           </div>
+
+          <p className="nav-section-title">{t.cskh}</p>
           <div 
             className={`nav-item ${viewMode === 'telegram' ? 'active' : ''}`} 
             onClick={() => { setViewMode('telegram'); fetchTelegramGroups(); }}
           >
             <MessageSquare size={18} />
-            <span>Nhóm Telegram</span>
+            <span>{t.teleData}</span>
+          </div>
+
+          <p className="nav-section-title">{t.accHr}</p>
+          <div 
+            className={`nav-item ${viewMode === 'employees' ? 'active' : ''}`} 
+            onClick={() => { setViewMode('employees'); fetchEmployees(); }}
+          >
+            <Users size={18} />
+            <span>{t.payroll}</span>
+          </div>
+
+          <p className="nav-section-title">{t.sysAdmin}</p>
+          <div 
+            className={`nav-item ${viewMode === 'users' ? 'active' : ''}`} 
+            onClick={() => { setViewMode('users'); fetchUsers(); }}
+          >
+            <Users size={18} />
+            <span>{t.accManagement}</span>
           </div>
         </>
       )}
 
       <div className="spacer"></div>
 
-      <div className="nav-item logout-btn" onClick={onLogout}>
-        <LogOut size={18} />
-        <span>Đăng xuất hệ thống</span>
-      </div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 from .base import BaseSkill
 from ..db.mongodb import mongodb
+from ..services.attendance import attendance_service
 from langchain_core.messages import SystemMessage, HumanMessage
 import json
 
@@ -12,36 +13,42 @@ class AccountingSkill(BaseSkill):
 
     async def get_system_prompt(self, user_role: str = "user", username: str = "guest") -> str:
         return f"""
-        Bạn là chuyên viên Kế toán và Nhân Sự (C&B) vô cùng chính xác, cẩn thận.
+        Bạn là chuyên viên Kế toán và Nhân Sự (C&B) của CÔNG TY TNHH CÔNG NGHỆ EXP.
         Nhiệm vụ:
-        - Tính toán các số liệu doanh thu, chi phí, lợi nhuận.
-        - Trả lời về các hóa đơn chưa thanh toán hoặc bảng lương nhân viên.
-        - LƯU Ý QUAN TRỌNG KHI TÍNH LƯƠNG:
-          Quy chuẩn 1 tháng làm việc có 22 ngày công.
-          Công thức tính LƯƠNG THỰC LÃNH:
-          Lương thực lãnh = (Lương cơ bản / 22) * Số ngày chấm công + Phụ cấp - Khấu trừ
-          Bạn KHÔNG ĐƯỢC tính sai số học các phép nhân chia cộng trừ. Hãy tính từng bước rõ ràng.
-        - BẢO MẬT DỮ LIỆU: Người đang hỏi bạn có TÀI KHOẢN là '{username}' và QUYỀN HẠN là '{user_role.upper()}'.
-          Nếu quyền là USER, bạn CHỈ ĐƯỢC PHÉP từ chối trả lời thông tin của người khác hoặc các báo cáo doanh thu chung. Chỉ cung cấp đúng thông tin cá nhân của người đó (nếu có).
-          Nếu quyền là ADMIN, cung cấp thoải mái mọi số liệu.
-        - Giọng văn: Nghiêm túc, minh bạch, báo cáo kiểu liệt kê tường minh các số liệu. Hãy hiển thị từng phép tính khi báo cáo lương người đó.
+        - Tính toán chính xác các số liệu doanh thu, chi phí, lương.
+        - LƯU Ý CÔNG THỨC TÍNH LƯƠNG THÁNG 02/2026 (Theo bảng lương mẫu):
+          1. Tổng thu nhập định mức = Lương HĐ + Phụ cấp xăng xe & ĐT + Hỗ trợ khác + Ăn ca.
+          2. Ngày công chuẩn (Standard Days) = 24 ngày (đã bao gồm lễ tết).
+          3. Tổng cộng (Gross) = (Tổng thu nhập định mức) * (Ngày công thực tế + Ngày lễ tết) / Ngày công chuẩn.
+          4. Khấu trừ bảo hiểm (10.5% lương HĐ) = BHXH (8%) + BHYT (1.5%) + BHTN (1%).
+          5. Thực lĩnh = Tổng cộng - Khấu trừ bảo hiểm.
+        
+        - QUY ĐỊNH BẢO MẬT: 
+          Người đang hỏi bạn là '{username}' với quyền '{user_role.upper()}'.
+          Nếu quyền là USER, chỉ cung cấp thông tin cá nhân của họ. Tuyệt đối không tiết lộ lương người khác.
+          Nếu quyền là ADMIN, hiển thị báo cáo chi tiết mọi nhân viên.
+        - Giọng văn: Chuyên nghiệp, liệt kê số liệu từng bước tính toán rõ ràng.
         - Ngôn ngữ: Tiếng Việt.
         """
 
     async def chat(self, user_input: str, user_role: str = "user", username: str = "guest", history: list = []) -> tuple[str, int]:
-        # Lấy dữ liệu từ MongoDB liên quan tới kế toán, nhân viên và chấm công
+        # Mặc định lấy theo tháng hiện tại của yêu cầu (ví dụ tháng 2/2026)
+        month, year = 2, 2026 
+        
         if user_role == "admin":
             accounting_data = await mongodb.db.accounting.find().to_list(length=10)
-            employees = await mongodb.db.employees.find().to_list(length=20)
-            attendance = await mongodb.db.attendance.find().to_list(length=50)
+            employees = await mongodb.db.employees.find().to_list(length=30)
+            # Lấy chấm công của tất cả nhân viên
+            attendance_list = await mongodb.db.attendance.find({"month": month, "year": year}).to_list(length=50)
         else:
-            # Nếu user thường, chỉ lấy dòng dữ liệu của đúng người đó
-            accounting_data = [] # User không được xem báo cáo TC
-            employees = await mongodb.db.employees.find({"name": {"$regex": f"^{username}$", "$options": "i"}}).to_list(length=1)
-            attendance = await mongodb.db.attendance.find({"name": {"$regex": f"^{username}$", "$options": "i"}}).to_list(length=31)
+            accounting_data = []
+            employees = await mongodb.db.employees.find({"username": username}).to_list(length=1)
+            # Lấy chấm công qua service (bridge cho tương lai)
+            res_attr = await attendance_service.get_attendance(username, month, year)
+            attendance_list = [{"username": username, **res_attr}]
         
-        # Bỏ đi _id để serialize
-        for doc in accounting_data + employees + attendance:
+        # Làm sạch ID
+        for doc in accounting_data + employees + attendance_list:
             doc.pop("_id", None)
 
         context = f"""
@@ -53,7 +60,7 @@ class AccountingSkill(BaseSkill):
         {json.dumps(employees, ensure_ascii=False)}
         
         3. Bảng chấm công thực tế theo tháng (Attendance):
-        {json.dumps(attendance, ensure_ascii=False)}
+        {json.dumps(attendance_list, ensure_ascii=False)}
         ================================================
 
         Câu hỏi / Yêu cầu của người dùng: {user_input}

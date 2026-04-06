@@ -66,5 +66,55 @@ export const apiService = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Linking failed');
     return data;
+  },
+
+  fetchEmployees: async () => {
+    const res = await fetch(`${BASE_URL}/employees`);
+    if (!res.ok) throw new Error('Failed to fetch employees');
+    return res.json();
+  },
+
+  updateEmployee: async (username: string, employee: any) => {
+    const res = await fetch(`${BASE_URL}/employees/${username}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(employee)
+    });
+    if (!res.ok) throw new Error('Failed to update employee');
+    return res.json();
+  },
+
+  updateUser: async (username: string, user: any) => {
+    const res = await fetch(`${BASE_URL}/users/${username}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+    if (!res.ok) throw new Error('Failed to update user');
+    return res.json();
+  },
+
+  deleteUser: async (username: string) => {
+    const res = await fetch(`${BASE_URL}/users/${username}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete user');
+    return res.json();
+  },
+
+  fetchProductionTimes: async () => {
+    const res = await fetch(`${BASE_URL}/production-times`);
+    if (!res.ok) throw new Error('Failed to fetch production times');
+    return res.json();
+  },
+
+  updateProductionTime: async (productType: string, minDays: number, maxDays: number) => {
+    const res = await fetch(`${BASE_URL}/production-times/${productType}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_type: productType, min_days: minDays, max_days: maxDays })
+    });
+    if (!res.ok) throw new Error('Failed to update production time');
+    return res.json();
   }
 };

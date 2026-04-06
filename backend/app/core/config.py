@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     
     # AI Config
     ANTHROPIC_API_KEY: Optional[str] = None
+    DEEPSEEK_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     
-    DEFAULT_MODEL: str = "claude-3-haiku-20240307" # Claude Haiku linh hoạt
+    DEFAULT_MODEL: str = "deepseek-chat" 
     
     # Database
     MONGODB_URL: str = "mongodb://mongodb:27017" # URL mặc định cho Docker
@@ -18,6 +19,11 @@ class Settings(BaseSettings):
     
     # Bots
     TELEGRAM_BOT_TOKEN: Optional[str] = None
+    
+    # Print Providers
+    CUSTOMCAT_API_KEY: Optional[str] = None
+    PENTIFINE_API_KEY: Optional[str] = None
+    MERCHIZE_API_KEY: Optional[str] = None
     
     class Config:
         env_file = ".env"

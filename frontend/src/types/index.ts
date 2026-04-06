@@ -9,6 +9,7 @@ export interface Message {
 export interface UserItem {
   username: string;
   role: string;
+  is_active: boolean;
   telegram_id?: string;
   created_at: string;
 }
@@ -26,6 +27,17 @@ export interface TelegramMember {
   first_name: string;
   last_name: string;
   updated_at: string;
+}
+
+export interface Employee {
+  name: string;
+  username: string;
+  position: string;
+  contract_salary: number;
+  fuel_phone: number;
+  other: number;
+  meal: number;
+  team: string;
 }
 
 export interface AuthContextType {

@@ -1,4 +1,5 @@
 import json
+import re
 from typing import List, Dict, Any
 from langchain_core.messages import SystemMessage, HumanMessage
 from ..core.llm_manager import llm_manager
@@ -20,6 +21,31 @@ class Orchestrator:
         self.classifier_llm = llm_manager.get_chat_model()
 
     async def classify_intent(self, user_input: str) -> tuple[str, int]:
+        # -- FAST PATH: Heuristic checks to save tokens --
+        user_input_lower = user_input.lower().strip()
+        
+        # 1. Check for Order IDs (usually long numbers)
+        if re.search(r'\d{12,}', user_input):
+            return "production", 0
+        
+        # 2. Check for Production keywords
+        if any(kw in user_input_lower for kw in ["đơn hàng", "trạng thái", "tracking", "vận chuyển", "sản xuất"]):
+            if re.search(r'#?\d+', user_input): # Có mã số đi kèm
+                return "production", 0
+
+        # 3. Check for Accounting keywords
+        if any(kw in user_input_lower for kw in ["doanh thu", "tiền", "lương", "hóa đơn", "kế toán"]):
+            return "accounting", 0
+
+        # 4. Check for CSKH / Messages
+        if any(kw in user_input_lower for kw in ["tin nhắn", "telegram", "khách hàng", "mắng", "chửi", "hỗ trợ"]):
+            return "cskh", 0
+
+        # 5. Check for Greetings
+        if user_input_lower in ["chào", "hi", "hello", "xin chào", "hey"]:
+            return "general", 0
+
+        # -- SLOW PATH: LLM Classification --
         prompt = f"""
         Nhiệm vụ của bạn là phân loại một yêu cầu của khách hàng vào một trong các bộ phận sau:
         - 'cskh': Nếu hỏi về hỗ trợ, khiếu nại, thông tin sản phẩm, HOẶC xem/phân tích lịch sử tin nhắn Telegram, thông tin thành viên, tóm tắt nhóm, sắc thái tin nhắn.
@@ -44,10 +70,10 @@ class Orchestrator:
         return "general", total_tokens
 
     async def process_request(self, user_input: str, intent: str, tokens_intent: int, user_role: str = "user", username: str = "guest") -> str:
+        user_input_lower = user_input.lower().strip()
         if intent == "general":
-            if "chào" in user_input.lower():
-                res, tk = await self.skills["cskh"].chat("Chào bạn! Bạn cần hỗ trợ gì ạ?", user_role, username)
-                return res + f"\n\n*(🔋 Tốn {tokens_intent + tk} tokens cho câu hỏi này)*"
+            if any(greeting in user_input_lower for greeting in ["chào", "hi", "hello", "xin chào", "hey"]):
+                return f"Chào bạn! Tôi là Nexus AI. Tôi có thể hỗ trợ bạn kiểm tra đơn hàng, xem báo cáo doanh thu hoặc tóm tắt tin nhắn Telegram. Bạn cần giúp gì ạ?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
             else:
                 return f"Tôi có thể giúp bạn gì với CSKH, Kế toán hoặc Sản xuất không?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
         

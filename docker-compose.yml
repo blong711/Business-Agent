@@ -22,13 +22,10 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    environment:
-      # Bạn vui lòng cung cấp API Key ở đây hoặc file .env
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-YOUR_ANTHROPIC_KEY_HERE}
-      - MONGODB_URL=mongodb://mongodb:27017
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-    networks:
-      - agent-network
+    env_file:
+      - .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    network_mode: host
 
   # 3. Giao diện Web Chat - Frontend React
   frontend:
@@ -47,6 +44,8 @@ services:
 networks:
   agent-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1400
 
 volumes:
   mongodb_data:
