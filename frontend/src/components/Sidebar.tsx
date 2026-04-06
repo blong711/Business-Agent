@@ -1,12 +1,12 @@
 import React from 'react';
-import { Bot, MessageSquare, Users, Package, Target } from 'lucide-react';
+import { Bot, MessageSquare, Users, Package, Target, HelpCircle } from 'lucide-react';
 import { translations, Language } from '../i18n';
 
 interface SidebarProps {
   currentUser: string;
   currentUserRole: string;
-  viewMode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing';
-  setViewMode: (mode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing') => void;
+  viewMode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing' | 'docs';
+  setViewMode: (mode: 'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing' | 'docs') => void;
   fetchUsers: () => void;
   fetchTelegramGroups: () => void;
   fetchEmployees: () => void;
@@ -88,6 +88,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </>
       )}
+      <div 
+        className={`nav-item ${viewMode === 'docs' ? 'active' : ''}`} 
+        onClick={() => setViewMode('docs')}
+        style={{ marginTop: 'auto' }}
+      >
+        <HelpCircle size={18} />
+        <span>{t.docs}</span>
+      </div>
 
       <div className="spacer"></div>
 

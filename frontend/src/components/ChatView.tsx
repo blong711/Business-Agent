@@ -211,7 +211,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <div className="avatar-mini">
                       {msg.sender === 'bot' ? <Bot size={14} /> : <User size={14} />}
                     </div>
-                    <span>{msg.sender === 'bot' ? 'Nexus AI' : (currentUser || 'User')}</span>
+                    <span>{msg.sender === 'bot' ? 'Business Agent' : (currentUser || 'User')}</span>
                     
                     {msg.sender === 'bot' && (
                       <button 
@@ -246,7 +246,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div className="message-content-wrapper align-start">
                   <div className="message-author bot">
                     <Bot size={14} color="#a78bfa" />
-                    <span>Nexus AI</span>
+                    <span>Business Agent</span>
                   </div>
                   <div className="message-bubble bot-bubble glass-bubble">
                     <div className="typing-indicator">

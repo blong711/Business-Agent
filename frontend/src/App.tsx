@@ -12,6 +12,7 @@ import { UserProfile } from './components/UserProfile';
 import { TopBar } from './components/TopBar';
 import { AdminAgentSettings } from './components/AdminAgentSettings';
 import { AdminMarketing } from './components/AdminMarketing';
+import { Docs } from './components/Docs';
 import { Settings, Target } from 'lucide-react';
 
 import { apiService } from './api';
@@ -21,7 +22,7 @@ import { translations, Language } from './i18n';
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('user');
-  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing'>('chat');
+  const [viewMode, setViewMode] = useState<'chat' | 'users' | 'telegram' | 'employees' | 'production' | 'profile' | 'agent_settings' | 'marketing' | 'docs'>('chat');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   
@@ -92,7 +93,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname.replace('/', '');
-      if (['chat', 'users', 'telegram', 'employees', 'production', 'profile', 'agent_settings', 'marketing'].includes(path)) {
+      if (['chat', 'users', 'telegram', 'employees', 'production', 'profile', 'agent_settings', 'marketing', 'docs'].includes(path)) {
         setViewMode(path as any);
       } else if (path === '') {
         setViewMode('chat');
@@ -202,9 +203,10 @@ const App: React.FC = () => {
       production: t.prodTime,
       profile: t.profile,
       agent_settings: t.agentSettings,
-      marketing: t.marketingMgt
+      marketing: t.marketingMgt,
+      docs: t.docs
     };
-    return viewTitleMap[viewMode] || 'Nexus';
+    return viewTitleMap[viewMode] || 'Business Agent';
   };
 
   const appContainerStyle: React.CSSProperties = {
@@ -402,6 +404,10 @@ const App: React.FC = () => {
 
           {viewMode === 'profile' && (
             <UserProfile currentUser={currentUser} role={currentUserRole} lang={lang} />
+          )}
+
+          {viewMode === 'docs' && (
+            <Docs lang={lang} />
           )}
         </div>
       </div>

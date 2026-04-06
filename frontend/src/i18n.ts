@@ -10,6 +10,7 @@ export interface TranslationSchema {
   payroll: string;
   marketingMgt: string;
   creativeAsset: string;
+  docs: string;
   sysAdmin: string;
   accManagement: string;
   logout: string;
@@ -208,12 +209,25 @@ export interface TranslationSchema {
   trendingNiches: string;
   growth: string;
   copyContent: string;
+  docsTitle: string;
+  docsSubtitle: string;
+  docsIntro: string;
+  docsUsage: string;
+  docsSkills: string;
+  docsFaq: string;
+  docsSetup: string;
+  docsSetupDesc: string;
+  docsTeleSetup: string;
+  docsTeleStep1: string;
+  docsTeleStep2: string;
+  docsTeleStep3: string;
+  docsKeysSetup: string;
 }
 
 export const translations: Record<Language, TranslationSchema> = {
   vi: {
     // Sidebar & Navigation
-    nexusChat: 'Hội thoại Nexus',
+    nexusChat: 'Hội thoại Business Agent',
     prodManagement: 'Quản lý Sản xuất',
     prodTime: 'Thời gian sản xuất',
     cskh: 'Chăm sóc Khách hàng',
@@ -222,6 +236,7 @@ export const translations: Record<Language, TranslationSchema> = {
     payroll: 'Bảng lương nhân sự',
     marketingMgt: 'Quản lý Marketing',
     creativeAsset: 'Kho nội dung & Camp',
+    docs: 'Hướng dẫn sử dụng',
     sysAdmin: 'Quản trị Hệ thống',
     accManagement: 'Quản lý Tài khoản',
     logout: 'Đăng xuất hệ thống',
@@ -253,7 +268,7 @@ export const translations: Record<Language, TranslationSchema> = {
 
     // Admin Users
     adminUsersTitle: 'Quản lý Tài khoản',
-    adminUsersSubtitle: 'DANH SÁCH NGƯỜI DÙNG & PHÂN QUYỀN HỆ THỐNG NEXUS AI',
+    adminUsersSubtitle: 'DANH SÁCH NGƯỜI DÙNG & PHÂN QUYỀN HỆ THỐNG BUSINESS AGENT',
     username: 'Tài khoản',
     role: 'Phân quyền',
     telegramId: 'Telegram ID',
@@ -274,7 +289,7 @@ export const translations: Record<Language, TranslationSchema> = {
 
     // Admin Telegram
     adminTeleTitle: 'Dữ liệu Telegram',
-    adminTeleSubtitle: 'GIÁM SÁT HOẠT ĐỘNG NEXUS TRÊN CÁC NHÓM CHAT DOANH NGHIỆP',
+    adminTeleSubtitle: 'GIÁM SÁT HOẠT ĐỘNG BUSINESS AGENT TRÊN CÁC NHÓM CHAT DOANH NGHIỆP',
     groupName: 'Tên Nhóm / Cuộc trò chuyện',
     category: 'Thể loại',
     lastUpdate: 'Cập nhật gần nhất',
@@ -295,14 +310,14 @@ export const translations: Record<Language, TranslationSchema> = {
 
     // Admin Employees
     adminEmpTitle: 'Quản lý Nhân sự',
-    adminEmpSubtitle: 'HỆ THỐNG ĐIỀU HÀNH & QUẢN TRỊ NGUỒN LỰC NEXUS',
+    adminEmpSubtitle: 'HỆ THỐNG ĐIỀU HÀNH & QUẢN TRỊ NGUỒN LỰC BUSINESS AGENT',
     empName: 'Họ và tên',
     position: 'Chức vụ',
     department: 'Team',
     salary: 'Lương HĐ',
     allowance: 'Phụ cấp',
     noEmpData: 'Không có dữ liệu nhân sự.',
-    syncNexus: 'Cập nhật dữ liệu từ Nexus Core...',
+    syncNexus: 'Cập nhật dữ liệu từ Business Agent Core...',
     editEmp: 'Chỉnh sửa:',
     empPosition: 'Chức vụ',
     contractSalary: 'Lương theo HĐ',
@@ -342,7 +357,7 @@ export const translations: Record<Language, TranslationSchema> = {
     synchronized: 'Đã đồng bộ!',
     saveChanges: 'Lưu thay đổi',
     changePassword: 'Đổi mật khẩu',
-    profileUpdateSuccess: 'Thông tin đã được cập nhật trên hệ thống Nexus Core.',
+    profileUpdateSuccess: 'Thông tin đã được cập nhật trên hệ thống Business Agent Core.',
     saving: 'Đang lưu...',
     password: 'Mật khẩu',
     loginSystem: 'Đăng nhập Hệ Thống',
@@ -434,19 +449,33 @@ export const translations: Record<Language, TranslationSchema> = {
     contentLibrary: 'Kho nội dung sáng tạo',
     trendingNiches: 'Niche đang thịnh hành',
     growth: 'Tăng trưởng',
-    copyContent: 'Sao chép nội dung'
+    copyContent: 'Sao chép nội dung',
+    docsTitle: 'Trung tâm Hỗ trợ',
+    docsSubtitle: 'TÀI LIỆU HƯỚNG DẪN VẬN HÀNH HỆ THỐNG BUSINESS AGENT',
+    docsIntro: 'Giới thiệu hệ thống',
+    docsUsage: 'Cách thức tương tác',
+    docsSkills: 'Danh sách kỹ năng chuyên môn',
+    docsFaq: 'Câu hỏi thường gặp',
+    docsSetup: 'Hướng dẫn thiết lập',
+    docsSetupDesc: 'Các bước để khởi chạy Business Agent của riêng bạn.',
+    docsTeleSetup: 'Khởi tạo Bot Telegram',
+    docsTeleStep1: 'Tìm @BotFather trên Telegram và chat /newbot.',
+    docsTeleStep2: 'Đặt tên cho Bot và nhận HTTP API Token.',
+    docsTeleStep3: 'Dán Token vào phần Cấu hình Agent trên hệ thống.',
+    docsKeysSetup: 'Quản lý API Keys'
   },
   en: {
     // Sidebar & Navigation
-    nexusChat: 'Nexus Conversation',
+    nexusChat: 'Business Agent Conversation',
     prodManagement: 'Production Mgt',
     prodTime: 'Production Timeline',
-    cskh: 'Customer Support',
+    cskh: 'Customer Service',
     teleData: 'Telegram Analytics',
     accHr: 'HR & Accounting',
     payroll: 'Staff Payroll',
     marketingMgt: 'Marketing Mgt',
     creativeAsset: 'Creative Assets',
+    docs: 'User Documentation',
     sysAdmin: 'System Admin',
     accManagement: 'Account Control',
     logout: 'Sign Out System',
@@ -498,7 +527,7 @@ export const translations: Record<Language, TranslationSchema> = {
 
     // Admin Telegram
     adminTeleTitle: 'Telegram Data',
-    adminTeleSubtitle: 'MONITORING NEXUS ACTIVITY ACROSS BUSINESS GROUPS',
+    adminTeleSubtitle: 'MONITORING BUSINESS AGENT ACTIVITY ACROSS BUSINESS GROUPS',
     groupName: 'Group / Chat Name',
     category: 'Category',
     lastUpdate: 'Last Updated',
@@ -526,7 +555,7 @@ export const translations: Record<Language, TranslationSchema> = {
     salary: 'Base Salary',
     allowance: 'Allowance',
     noEmpData: 'No employee data found.',
-    syncNexus: 'Synchronizing from Nexus Core...',
+    syncNexus: 'Synchronizing from Business Agent Core...',
     editEmp: 'Edit Employee:',
     empPosition: 'Position',
     contractSalary: 'Contract Salary',
@@ -566,7 +595,7 @@ export const translations: Record<Language, TranslationSchema> = {
     synchronized: 'Synchronized!',
     saveChanges: 'Save Changes',
     changePassword: 'Change Password',
-    profileUpdateSuccess: 'Information has been updated on Nexus Core system.',
+    profileUpdateSuccess: 'Information has been updated on Business Agent Core system.',
     saving: 'Saving...',
     password: 'Password',
     loginSystem: 'Log In System',
@@ -618,7 +647,7 @@ export const translations: Record<Language, TranslationSchema> = {
     updateSuccess: 'Updated successfully!',
     agent_production: 'Production Agent',
     agent_production_desc: 'Production coordinator, order lookup and provider tracking specialist.',
-    agent_cskh: 'CSKH Agent',
+    agent_cskh: 'Customer Service Agent',
     agent_cskh_desc: 'Handles customer inquiries, shipping status checks and member info.',
     agent_accounting: 'Accounting Agent',
     agent_accounting_desc: 'Manages payroll, financial reconciliation and operational costs.',
@@ -662,6 +691,19 @@ export const translations: Record<Language, TranslationSchema> = {
     contentLibrary: 'Content Library',
     trendingNiches: 'Trending Niches',
     growth: 'Growth',
-    copyContent: 'Copy content'
+    copyContent: 'Copy content',
+    docsTitle: 'Help Center',
+    docsSubtitle: 'BUSINESS AGENT SYSTEM OPERATION DOCUMENTATION',
+    docsIntro: 'System Introduction',
+    docsUsage: 'How to Interact',
+    docsSkills: 'Professional Skills List',
+    docsFaq: 'Frequently Asked Questions',
+    docsSetup: 'Setup Guide',
+    docsSetupDesc: 'Steps to launch your own Business Agent.',
+    docsTeleSetup: 'Create Telegram Bot',
+    docsTeleStep1: 'Find @BotFather on Telegram and send /newbot.',
+    docsTeleStep2: 'Name your Bot and receive the HTTP API Token.',
+    docsTeleStep3: 'Paste the Token into the Agent Settings in this system.',
+    docsKeysSetup: 'Manage API Keys'
   }
 };

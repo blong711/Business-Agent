@@ -12,7 +12,7 @@ interface UserProfileProps {
 export const UserProfile: React.FC<UserProfileProps> = ({ currentUser, role, lang }) => {
   const t = translations[lang];
   const [name, setName] = useState(currentUser);
-  const [email, setEmail] = useState(`${currentUser.toLowerCase()}@nexus.ai`);
+  const [email, setEmail] = useState(`${currentUser.toLowerCase()}@businessagent.ai`);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = () => {
@@ -89,7 +89,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ currentUser, role, lan
                     type="email" 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@nexus.ai"
+                    placeholder="example@businessagent.ai"
                   />
                 </div>
               </div>

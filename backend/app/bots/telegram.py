@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, ChatMemberUpdated
+from telegram import Update, ChatMemberUpdated, BotCommand
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, ChatMemberHandler, filters
 from ..core.config import settings
 from ..agents.orchestrator import orchestrator
@@ -20,7 +20,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Tôi có thể hỗ trợ các nghiệp vụ về:\n"
         "📦 Chăm sóc khách hàng (CSKH)\n"
         "📊 Kế toán (Accounting)\n"
-        "🏭 Sản xuất (Production)\n\n"
+        "🏭 Sản xuất (Production)\n"
+        "📢 Marketing (Marketing)\n\n"
         "Hãy thêm tôi vào nhóm hoặc trò chuyện trực tiếp để tôi được hỗ trợ nhé!"
     )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_text)
@@ -47,6 +48,21 @@ async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=msg, 
         parse_mode="HTML"
     )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    help_text = (
+        "📖 <b>Hướng dẫn sử dụng AI Business Agent</b>\n\n"
+        "Tôi là trợ lý AI thông minh hỗ trợ vận hành doanh nghiệp. Các lệnh khả dụng:\n\n"
+        "🔹 /start - Bắt đầu tương tác và nhận lời chào.\n"
+        "🔹 /link - Liên kết tài khoản hệ thống của bạn để đồng bộ dữ liệu.\n"
+        "🔹 /help - Hiển thị hướng dẫn này.\n\n"
+        "Bạn có thể nhắn tin trực tiếp hoặc nhắc tên tôi trong nhóm để hỏi về:\n"
+        "✅ Kiểm tra trạng thái đơn hàng (Tracking #...)\n"
+        "✅ Báo cáo doanh thu, kế toán.\n"
+        "✅ Sáng tạo nội dung Marketing, SEO.\n"
+        "✅ Tóm tắt tin nhắn trong nhóm Telegram."
+    )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text, parse_mode="HTML")
 
 async def track_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -114,6 +130,15 @@ def setup_telegram_bot():
         
     application = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).build()
     
+    async def post_init(app):
+        await app.bot.set_my_commands([
+            BotCommand("start", "Bắt đầu tương tác với Bot"),
+            BotCommand("link", "Liên kết tài khoản hệ thống"),
+            BotCommand("help", "Xem hướng dẫn sử dụng")
+        ])
+
+    application.post_init = post_init
+    
     # Handlers theo dõi thay đổi Group/Member
     application.add_handler(ChatMemberHandler(track_chat_member, ChatMemberHandler.MY_CHAT_MEMBER))
     application.add_handler(ChatMemberHandler(track_chat_member, ChatMemberHandler.CHAT_MEMBER))
@@ -121,6 +146,7 @@ def setup_telegram_bot():
     # Handlers nhận Command và Tin nhắn thường
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('link', link))
+    application.add_handler(CommandHandler('help', help_command))
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
     
     # Error handler

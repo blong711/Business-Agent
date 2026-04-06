@@ -74,7 +74,7 @@ class Orchestrator:
         - 'marketing': Nếu yêu cầu viết content, title sản phẩm, mô tả bán hàng, nội dung quảng cáo.
         - 'general': Nếu chỉ là chào hỏi hoặc nội dung khác.
  
-        Chỉ trả về DUY NHẤT một từ khóa trong danh sách trên (cskh, accounting, production, general).
+        Chỉ trả về DUY NHẤT một từ khóa trong danh sách trên (cskh, accounting, production, marketing, general).
         Yêu cầu: '{user_input}'
         """
         messages = [HumanMessage(content=prompt)]
@@ -94,9 +94,9 @@ class Orchestrator:
         user_input_lower = user_input.lower().strip()
         if intent == "general":
             if any(greeting in user_input_lower for greeting in ["chào", "hi", "hello", "xin chào", "hey"]):
-                return f"Chào bạn! Tôi là Nexus AI. Tôi có thể hỗ trợ bạn kiểm tra đơn hàng, xem báo cáo doanh thu hoặc tóm tắt tin nhắn Telegram. Bạn cần giúp gì ạ?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
+                return f"Chào bạn! Tôi là Business Agent. Tôi có thể hỗ trợ bạn kiểm tra đơn hàng, xem báo cáo doanh thu, tối ưu SEO Marketing hoặc tóm tắt tin nhắn Telegram. Bạn cần giúp gì ạ?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
             else:
-                return f"Tôi có thể giúp bạn gì với CSKH, Kế toán hoặc Sản xuất không?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
+                return f"Tôi có thể giúp bạn gì với CSKH, Kế toán, Sản xuất hoặc Marketing không?\n\n*(🔋 Tốn {tokens_intent} tokens cho câu hỏi này)*"
         
         skill = self.skills.get(intent)
         if skill:

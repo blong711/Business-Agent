@@ -52,7 +52,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           <div className="logo-box">
             <Bot size={22} color="white" />
           </div>
-          <h1 className="logo-text">AI Nexus</h1>
+          <h1 className="logo-text">Business Agent</h1>
         </div>
       </div>
 
