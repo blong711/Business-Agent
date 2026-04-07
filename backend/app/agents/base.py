@@ -53,9 +53,10 @@ class BaseSkill:
         
         filtered = []
         for t in tools:
-            # t là một function được wrap bởi @tool, nó có thuộc tính name (hoặc __name__)
-            # Lưu ý name của tool thường là ID chúng ta dùng trong Capabilities
-            tool_name = getattr(t, "name", t.__name__)
+            # t có thể là một function hoặcvà một StructuredTool (LangChain)
+            tool_name = getattr(t, "name", None)
+            if not tool_name:
+                tool_name = getattr(t, "__name__", "unknown")
             if tool_name in allowed_cap_ids:
                 filtered.append(t)
         

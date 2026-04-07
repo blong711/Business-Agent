@@ -146,22 +146,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_private = chat.type == "private"
     is_mentioned = bot_username and f"@{bot_username}" in message.text
 
-    if is_private or is_mentioned:
-        # Lọc bỏ username của bot ra khỏi câu hỏi để AI không bị nhiễu
-        user_text = message.text.replace(f"@{bot_username}", "").strip() if bot_username else message.text
-        
-        if user_text:
-            # Lấy role người dùng dựa vào telegram_id
-            db_user = await mongodb.db.users.find_one({"telegram_id": str(user.id)}) if user else None
-            user_role = db_user.get("role", "user") if db_user else "user"
-            username = db_user.get("username", user.username or f"telegram_{user.id}") if db_user else (user.username or f"telegram_{user.id}")
+    # Lọc bỏ username của bot ra khỏi câu hỏi để AI không bị nhiễu (nếu có)
+    user_text = message.text.replace(f"@{bot_username}", "").strip() if bot_username else message.text
 
-            # Phân tích ý định
-            intent, tokens_intent = await orchestrator.classify_intent(user_text)
+    # Phân tích ý định của tin nhắn (vừa để lưu, vừa để quyết định có trả lời tự động hay không)
+    intent, tokens_intent = await orchestrator.classify_intent(user_text)
 
-            # Gửi tin nhắn đến hệ thống AI Agent
-            response_text = await orchestrator.process_request(user_text, intent, tokens_intent, user_role, username)
-            await context.bot.send_message(chat_id=chat.id, text=response_text, reply_to_message_id=message.message_id)
+    # Lấy thông tin người dùng từ DB để áp quyền
+    db_user = await mongodb.db.users.find_one({"telegram_id": str(user.id)}) if user else None
+    user_role = db_user.get("role", "user") if db_user else "user"
+    username = db_user.get("username", user.username or f"telegram_{user.id}") if db_user else (user.username or f"telegram_{user.id}")
+
+    # QUY TRÌNH QUYẾT ĐỊNH TRẢ LỜI:
+    # 1. Trả lời ngay nếu là chat riêng tư (is_private).
+    # 2. Trả lời ngay nếu bot được nhắc tên (is_mentioned).
+    # 3. TRẢ LỜI TỰ ĐỘNG (không cần mention) nếu ý định là một bộ phận chuyên môn (không phải 'general').
+    should_respond = is_private or is_mentioned or (intent != "general")
+
+    if should_respond and user_text:
+        # Gửi tin nhắn đến hệ thống AI Agent để lấy câu trả lời
+        response_text = await orchestrator.process_request(user_text, intent, tokens_intent, user_role, username)
+        await context.bot.send_message(chat_id=chat.id, text=response_text, reply_to_message_id=message.message_id)
 
 def setup_telegram_bot():
     if not settings.TELEGRAM_BOT_TOKEN:
