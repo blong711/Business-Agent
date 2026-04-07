@@ -90,6 +90,22 @@ async def track_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
         upsert=True
     )
 
+    # Lưu thông tin thành viên (Nếu là người dùng thật)
+    user = new_member.user
+    if not user.is_bot:
+        await mongodb.db.telegram_members.update_one(
+            {"user_id": user.id, "chat_id": chat.id},
+            {
+                "$set": {
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "username": user.username,
+                    "updated_at": datetime.datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Xử lý tin nhắn văn bản và chuyển qua orchestrator.
@@ -100,6 +116,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not message or not message.text:
         return
+
+    # 1. Cập nhật thông tin thành viên & Lưu tin nhắn vào lịch sử (Cho tóm tắt CSKH)
+    if chat.type != "private" and user and not user.is_bot:
+        # Cập nhật thành viên
+        await mongodb.db.telegram_members.update_one(
+            {"user_id": user.id, "chat_id": chat.id},
+            {
+                "$set": {
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "username": user.username,
+                    "updated_at": datetime.datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        
+        # Lưu tin nhắn vào collection telegram_messages để Agent có thể tóm tắt
+        await mongodb.db.telegram_messages.insert_one({
+            "chat_id": chat.id,
+            "user_id": user.id,
+            "text": message.text,
+            "date": datetime.datetime.utcnow()
+        })
 
     # Kiểm tra xem có nhắc đến bot trong nhóm không, hoặc là chat private
     bot_username = context.bot.username

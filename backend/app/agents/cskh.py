@@ -1,4 +1,5 @@
 from typing import List
+import datetime
 from .base import BaseSkill
 from ..db.mongodb import mongodb
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -25,7 +26,7 @@ class CSKHSkill(BaseSkill):
         Nhiệm vụ: 
         - Trả lời khách hàng nhẹ nhàng, thấu hiểu.
         - Phân tích thông tin nhóm Telegram, tổng hợp tin nhắn khách hàng và ĐÁNH GIÁ THÁI ĐỘ của khách.
-        - TÌM KIẾM, trích xuất sự thật dựa vào Dữ liệu Telegram hệ thống cung cấp dưới đây.
+        - TÌM KIẾM CHI TIẾT và trích xuất thông tin (người dùng, thành viên, tin nhắn) dựa trên Dữ liệu Telegram hệ thống cung cấp dưới đây. Nếu user hỏi 'ai', 'người nào', 'thành viên nào' trong một nhóm (ví dụ: 'Test local'), hãy tìm trong Member List có 'chat_id' khớp với 'chat_id' của nhóm đó.
         - BẢO MẬT DỮ LIỆU: Người đang hỏi bạn có TÀI KHOẢN là '{username}' và QUYỀN HẠN là '{user_role.upper()}'.
           Nếu quyền là USER, bạn KHÔNG ĐƯỢC PHÉP báo cáo tóm tắt nội dung tin nhắn Telegram của người khác hoặc thông tin nhóm nội bộ. Chỉ được trả lời hoặc hỗ trợ các vấn đề cá nhân của họ.
           Nếu quyền là ADMIN, bạn được phép xem và tóm tắt mọi thứ.
@@ -55,14 +56,20 @@ class CSKHSkill(BaseSkill):
             {
                 "user_id": str(m.get("user_id")), 
                 "name": f"{m.get('first_name', '')} {m.get('last_name', '')}".strip(),
-                "username": m.get("username", "")
+                "username": m.get("username", ""),
+                "chat_id": str(m.get("chat_id"))
             } 
             for m in members
         ]
         
         # Đảo ngược tin nhắn để theo thứ tự thời gian cũ -> mới
         recent_messages = [
-            {"user_id": str(m.get("user_id")), "text": m.get("text", "")} 
+            {
+                "user_id": str(m.get("user_id")), 
+                "text": m.get("text", ""), 
+                "chat_id": str(m.get("chat_id")),
+                "date": m.get("date").isoformat() if isinstance(m.get("date"), datetime.datetime) else str(m.get("date", ""))
+            } 
             for m in messages_raw[::-1]
         ]
 

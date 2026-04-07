@@ -74,9 +74,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    settings.FRONTEND_URL,
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -309,12 +315,19 @@ async def get_chat_history(username: str):
         intent_val = msg.get("intent")
         if isinstance(intent_val, list) and len(intent_val) > 0:
             intent_val = str(intent_val[0])
-            
+        
+        # Robust handling for field existence and type
+        timestamp_val = msg.get("timestamp")
+        if isinstance(timestamp_val, datetime.datetime):
+            timestamp_str = timestamp_val.isoformat()
+        else:
+            timestamp_str = str(timestamp_val or "")
+
         result.append(MessageItem(
-            role=msg["role"], 
-            content=msg["content"], 
+            role=msg.get("role", "unknown"), 
+            content=msg.get("content", ""), 
             intent=intent_val if isinstance(intent_val, str) else None, 
-            timestamp=msg["timestamp"].isoformat()
+            timestamp=timestamp_str
         ))
     return result
 

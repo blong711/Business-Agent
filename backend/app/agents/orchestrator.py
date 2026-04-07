@@ -2,6 +2,7 @@ import json
 import re
 from typing import List, Dict, Any
 from langchain_core.messages import SystemMessage, HumanMessage
+from ..core.config import settings
 from ..core.llm_manager import llm_manager
 from .cskh import CSKHSkill
 from .accounting import AccountingSkill
@@ -38,8 +39,8 @@ class Orchestrator:
         if any(kw in user_input_lower for kw in ["doanh thu", "tiền", "lương", "hóa đơn", "kế toán"]):
             return "accounting", 0
 
-        # 4. Check for CSKH / Messages
-        if any(kw in user_input_lower for kw in ["tin nhắn", "telegram", "khách hàng", "mắng", "chửi", "hỗ trợ"]):
+        # 4. Check for CSKH / Messages / Groups
+        if any(kw in user_input_lower for kw in ["tin nhắn", "telegram", "khách hàng", "mắng", "chửi", "hỗ trợ", "nhóm", "thành viên", "ai", "người"]):
             return "cskh", 0
 
         # 5. Check for Marketing keywords
